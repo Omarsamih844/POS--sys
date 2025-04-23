@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Categorie;
 use App\Models\Category;
+use App\Models\Commande;
+use App\Models\CommandeProduit;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Produit;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
