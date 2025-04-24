@@ -7,7 +7,6 @@ import Receipt from './Receipt';
 import PromotionModal from './PromotionModal';
 import CustomizeModal from './CustomizeModal';
 import PaymentModal from './PaymentModal';
-import TableOccupancyModal from './TableOccupancyModal';
 import { 
     DocumentTextIcon, 
     ShoppingCartIcon, 
@@ -23,8 +22,8 @@ import {
     XMarkIcon
 } from '@heroicons/react/24/solid';
 
-// Menu Data Structure
-const menuData = [
+// Menu Data
+export const menuData = [
   {
     id: 1,
     name: "Plats Principaux",
@@ -173,7 +172,155 @@ const menuData = [
 
 // ProductGrid Component
 const ProductGrid = ({ categoryId, onProductSelect }) => {
-    // Find the selected category and its products
+    // Menu data
+    const menuData = [
+        {
+          id: 1,
+          name: "Plats Principaux",
+          products: [
+            { id: 1, name: "Poulet rôti", description: "Roast Chicken", price: 15.99 },
+            { id: 2, name: "Bœuf bourguignon", description: "Beef Bourguignon", price: 18.99 },
+            { id: 3, name: "Lasagne", description: "Classic Lasagna", price: 14.99 },
+            { id: 4, name: "Poisson grillé", description: "Grilled Fish", price: 17.99 },
+            { id: 5, name: "Curry de légumes", description: "Vegetable Curry", price: 13.99 },
+            { id: 6, name: "Tacos de viande", description: "Meat Tacos", price: 12.99 },
+            { id: 7, name: "Risotto aux champignons", description: "Mushroom Risotto", price: 16.99 },
+            { id: 8, name: "Pizza Margherita", description: "Classic Margherita Pizza", price: 13.99 },
+            { id: 9, name: "Quiche Lorraine", description: "Classic Quiche", price: 11.99 },
+            { id: 10, name: "Couscous aux légumes", description: "Vegetable Couscous", price: 12.99 },
+            { id: 11, name: "Sauté de porc", description: "Pork Stir-fry", price: 15.99 },
+            { id: 12, name: "Chili con carne", description: "Spicy Chili", price: 14.99 }
+          ]
+        },
+        {
+          id: 2,
+          name: "Entrées",
+          products: [
+            { id: 13, name: "Salade César", description: "Caesar Salad", price: 8.99 },
+            { id: 14, name: "Soupe à l'oignon", description: "French Onion Soup", price: 7.99 },
+            { id: 15, name: "Bruschetta", description: "Italian Bruschetta", price: 6.99 },
+            { id: 16, name: "Bouchées de fromage", description: "Cheese Bites", price: 7.99 },
+            { id: 17, name: "Calamars frits", description: "Fried Calamari", price: 9.99 },
+            { id: 18, name: "Mini quiches", description: "Mini Quiches", price: 8.99 },
+            { id: 19, name: "Tapenade avec pain", description: "Tapenade with Bread", price: 6.99 },
+            { id: 20, name: "Croquettes de pommes de terre", description: "Potato Croquettes", price: 7.99 },
+            { id: 21, name: "Antipasti platter", description: "Italian Antipasti", price: 12.99 },
+            { id: 22, name: "Hummus avec pita", description: "Hummus with Pita", price: 7.99 },
+            { id: 23, name: "Gyoza", description: "Japanese Dumplings", price: 8.99 },
+            { id: 24, name: "Nachos avec salsa", description: "Nachos with Salsa", price: 8.99 }
+          ]
+        },
+        {
+          id: 3,
+          name: "Desserts",
+          products: [
+            { id: 25, name: "Tarte aux pommes", description: "Apple Pie", price: 6.99 },
+            { id: 26, name: "Crème brûlée", description: "Classic Crème Brûlée", price: 7.99 },
+            { id: 27, name: "Mousse au chocolat", description: "Chocolate Mousse", price: 6.99 },
+            { id: 28, name: "Tiramisu", description: "Italian Tiramisu", price: 7.99 },
+            { id: 29, name: "Cheesecake", description: "New York Cheesecake", price: 7.99 },
+            { id: 30, name: "Panna cotta", description: "Italian Panna Cotta", price: 6.99 },
+            { id: 31, name: "Macarons", description: "French Macarons", price: 8.99 },
+            { id: 32, name: "Brownies", description: "Chocolate Brownies", price: 5.99 },
+            { id: 33, name: "Profiteroles", description: "Cream Puffs", price: 7.99 },
+            { id: 34, name: "Gâteau au chocolat", description: "Chocolate Cake", price: 6.99 },
+            { id: 35, name: "Crêpes Suzette", description: "Classic French Crêpes", price: 8.99 },
+            { id: 36, name: "Glaces artisanales", description: "Artisanal Ice Cream", price: 5.99 }
+          ]
+        },
+        {
+          id: 4,
+          name: "Boissons Non-Alcoolisées",
+          products: [
+            { id: 37, name: "Eau minérale", description: "Mineral Water", price: 2.99 },
+            { id: 38, name: "Soda", description: "Soft Drinks", price: 3.99 },
+            { id: 39, name: "Jus d'orange", description: "Orange Juice", price: 3.99 },
+            { id: 40, name: "Limonade", description: "Fresh Lemonade", price: 3.99 },
+            { id: 41, name: "Thé glacé", description: "Iced Tea", price: 3.99 },
+            { id: 42, name: "Smoothie aux fruits", description: "Fruit Smoothie", price: 5.99 },
+            { id: 43, name: "Lait au chocolat", description: "Chocolate Milk", price: 3.99 },
+            { id: 44, name: "Café décaféiné", description: "Decaf Coffee", price: 3.99 },
+            { id: 45, name: "Boisson énergisante", description: "Energy Drink", price: 4.99 },
+            { id: 46, name: "Eau aromatisée", description: "Flavored Water", price: 3.99 },
+            { id: 47, name: "Jus de pomme", description: "Apple Juice", price: 3.99 },
+            { id: 48, name: "Boisson au yaourt", description: "Yogurt Drink", price: 4.99 }
+          ]
+        },
+        {
+          id: 5,
+          name: "Boissons Alcoolisées",
+          products: [
+            { id: 49, name: "Vin rouge", description: "Red Wine", price: 6.99 },
+            { id: 50, name: "Vin blanc", description: "White Wine", price: 6.99 },
+            { id: 51, name: "Bière blonde", description: "Blonde Beer", price: 5.99 },
+            { id: 52, name: "Bière brune", description: "Brown Beer", price: 5.99 },
+            { id: 53, name: "Whisky", description: "Premium Whisky", price: 8.99 },
+            { id: 54, name: "Vodka", description: "Premium Vodka", price: 7.99 },
+            { id: 55, name: "Rhum", description: "Caribbean Rum", price: 7.99 },
+            { id: 56, name: "Tequila", description: "Mexican Tequila", price: 7.99 },
+            { id: 57, name: "Champagne", description: "French Champagne", price: 12.99 },
+            { id: 58, name: "Sangria", description: "Spanish Sangria", price: 6.99 },
+            { id: 59, name: "Cocktails variés", description: "Various Cocktails", price: 9.99 },
+            { id: 60, name: "Liqueurs", description: "Assorted Liqueurs", price: 7.99 }
+          ]
+        },
+        {
+          id: 6,
+          name: "Snacks",
+          products: [
+            { id: 61, name: "Chips de pommes de terre", description: "Potato Chips", price: 3.99 },
+            { id: 62, name: "Popcorn", description: "Fresh Popcorn", price: 3.99 },
+            { id: 63, name: "Amandes grillées", description: "Roasted Almonds", price: 4.99 },
+            { id: 64, name: "Barres granola", description: "Granola Bars", price: 2.99 },
+            { id: 65, name: "Fruits secs", description: "Dried Fruits", price: 4.99 },
+            { id: 66, name: "Crackers", description: "Assorted Crackers", price: 3.99 },
+            { id: 67, name: "Fromage en cubes", description: "Cheese Cubes", price: 5.99 },
+            { id: 68, name: "Olives", description: "Mixed Olives", price: 4.99 },
+            { id: 69, name: "Bâtonnets de légumes avec dip", description: "Veggie Sticks with Dip", price: 5.99 },
+            { id: 70, name: "Mini pretzels", description: "Mini Pretzels", price: 3.99 },
+            { id: 71, name: "Mélange de noix", description: "Mixed Nuts", price: 5.99 },
+            { id: 72, name: "Gâteaux apéritifs", description: "Savory Cakes", price: 4.99 }
+          ]
+        },
+        {
+          id: 7,
+          name: "Produits de Boulangerie",
+          products: [
+            { id: 73, name: "Baguette", description: "French Baguette", price: 2.99 },
+            { id: 74, name: "Pain de seigle", description: "Rye Bread", price: 3.99 },
+            { id: 75, name: "Croissant", description: "Butter Croissant", price: 2.99 },
+            { id: 76, name: "Pain au chocolat", description: "Chocolate Bread", price: 3.99 },
+            { id: 77, name: "Brioche", description: "French Brioche", price: 3.99 },
+            { id: 78, name: "Pain pita", description: "Pita Bread", price: 2.99 },
+            { id: 79, name: "Muffins", description: "Assorted Muffins", price: 3.99 },
+            { id: 80, name: "Scones", description: "English Scones", price: 3.99 },
+            { id: 81, name: "Focaccia", description: "Italian Focaccia", price: 4.99 },
+            { id: 82, name: "Pain aux noix", description: "Nut Bread", price: 4.99 },
+            { id: 83, name: "Tartes salées", description: "Savory Tarts", price: 5.99 },
+            { id: 84, name: "Gâteaux de mariage", description: "Wedding Cakes", price: 99.99 }
+          ]
+        },
+        {
+          id: 8,
+          name: "Boissons Chaudes",
+          products: [
+            { id: 85, name: "Espresso", description: "Strong Espresso", price: 2.99 },
+            { id: 86, name: "Cappuccino", description: "Italian Cappuccino", price: 3.99 },
+            { id: 87, name: "Latte", description: "Café Latte", price: 3.99 },
+            { id: 88, name: "Thé noir", description: "Black Tea", price: 2.99 },
+            { id: 89, name: "Thé vert", description: "Green Tea", price: 2.99 },
+            { id: 90, name: "Thé aux fruits", description: "Fruit Tea", price: 3.99 },
+            { id: 91, name: "Chocolat chaud épicé", description: "Spiced Hot Chocolate", price: 4.99 },
+            { id: 92, name: "Infusion de camomille", description: "Chamomile Infusion", price: 2.99 },
+            { id: 93, name: "Lait chaud au miel", description: "Hot Milk with Honey", price: 3.99 },
+            { id: 94, name: "Tisane à la menthe", description: "Mint Herbal Tea", price: 2.99 },
+            { id: 95, name: "Café au lait", description: "Coffee with Milk", price: 3.99 },
+            { id: 96, name: "Chai latte", description: "Spiced Chai Latte", price: 4.99 }
+          ]
+        }
+    ];
+    
+    // Find the selected category and get its products
     const category = menuData.find(cat => cat.id === categoryId);
     const products = category ? category.products : [];
     
@@ -185,33 +332,33 @@ const ProductGrid = ({ categoryId, onProductSelect }) => {
     };
     
     return (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-3 p-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-6">
             {products.map((product) => (
                 <div
                     key={product.id}
                     onClick={() => onProductSelect(product)}
-                    className="group bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1"
+                    className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden transform hover:-translate-y-1"
                 >
-                    <div className="relative h-28 sm:h-32 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
                         <img
                             src={product.image || getRandomImage(product.id)}
                             alt={product.name}
-                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
                             onError={(e) => {
                                 e.target.src = `https://source.unsplash.com/300x200/?${product.name.split(' ')[0].toLowerCase()}`;
                             }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        <div className="absolute bottom-0 left-0 right-0 p-2 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                            <p className="text-xs opacity-90 line-clamp-2">{product.description}</p>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                            <p className="text-sm opacity-90">{product.description}</p>
                         </div>
                     </div>
-                    <div className="p-2">
-                        <h3 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors duration-300 truncate">{product.name}</h3>
-                        <div className="mt-1 flex justify-between items-center">
-                            <span className="text-sm font-bold text-blue-600">{product.price.toFixed(2)} MAD</span>
-                            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium hover:bg-blue-700">
-                                +
+                    <div className="p-4">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors duration-300">{product.name}</h3>
+                        <div className="mt-2 flex justify-between items-center">
+                            <span className="text-lg font-bold text-blue-600">{product.price.toFixed(2)} MAD</span>
+                            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium hover:bg-blue-700">
+                                Ajouter
                             </button>
                         </div>
                     </div>
@@ -247,31 +394,19 @@ const CategoryCards = ({ onCategorySelect }) => {
         8: "#E8D7F1"  // Boissons Chaudes - Soft purple
     };
 
-    // Category icon mapping
-    const categoryIcons = {
-        1: "🍽️", // Plats Principaux
-        2: "🥗", // Entrées
-        3: "🍰", // Desserts
-        4: "🥤", // Boissons Non-Alcoolisées
-        5: "🍷", // Boissons Alcoolisées
-        6: "🍿", // Snacks
-        7: "🥖", // Produits de Boulangerie
-        8: "☕", // Boissons Chaudes
-    };
-
     return (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 p-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6">
             {menuData.map(category => (
                 <div
                     key={category.id}
                     onClick={() => onCategorySelect(category.id)}
-                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-28 sm:h-32"
+                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-48"
                     style={{ backgroundColor: categoryColors[category.id] + '30' }}
                 >
-                    <div className="p-3 flex flex-col items-center justify-center h-full">
-                        <div className="text-3xl mb-1">{categoryIcons[category.id]}</div>
-                        <h3 className="font-semibold text-sm text-gray-800 text-center">{category.name}</h3>
-                        <p className="text-xs text-gray-600 mt-1">{category.products.length} articles</p>
+                    <div className="p-6 flex flex-col items-center justify-center h-full">
+                        <div className="text-5xl mb-4">{categoryIcons[category.id]}</div>
+                        <h3 className="font-bold text-xl text-gray-800 text-center">{category.name}</h3>
+                        <p className="text-xs text-gray-600 mt-2">{category.products.length} articles</p>
                     </div>
                 </div>
             ))}
@@ -296,50 +431,32 @@ const ProductSection = ({ onProductSelect, activeCategory }) => {
         setSelectedCategory(null);
     };
 
-    // Get the category name for the selected category
-    const categoryName = selectedCategory ? 
-        menuData.find(cat => cat.id === selectedCategory)?.name : null;
-
-    // Get the category icon for the selected category
-    const getCategoryIcon = (categoryId) => {
-        const icons = {
-            1: "🍽️",
-            2: "🥗",
-            3: "🍰",
-            4: "🥤",
-            5: "🍷",
-            6: "🍿", 
-            7: "🥖",
-            8: "☕"
-        };
-        return icons[categoryId] || "📋";
-    };
-
     return (
         <div className="relative">
             {selectedCategory ? (
                 <>
-                    <div className="flex items-center mb-2 px-4 pt-3">
+                    <div className="flex items-center mb-6 px-6 pt-4">
                         <button
                             onClick={handleBackToCategories}
-                            className="flex items-center gap-1 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm hover:bg-gray-50 rounded-md"
+                            className="group relative inline-flex items-center gap-2.5 rounded-md bg-white px-6 py-4 font-semibold text-gray-800 shadow-lg hover:bg-gray-50 hover:text-blue-600 transition duration-300 ease-in-out transform hover:-translate-y-0.5 hover:shadow-xl"
                         >
+                            <span className="absolute inset-0 rounded-md bg-gradient-to-r from-blue-50 to-blue-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                             <svg 
-                                className="w-4 h-4 text-gray-600" 
+                                className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors duration-300" 
                                 fill="none" 
                                 stroke="currentColor" 
                                 viewBox="0 0 24 24"
                             >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                             </svg>
-                            <span>Retour</span>
+                            <span className="relative">Retour aux catégories</span>
+                            <span className="absolute bottom-0 left-1/2 h-0.5 w-0 bg-blue-600 group-hover:w-4/5 group-hover:-translate-x-1/2 transition-all duration-300"></span>
                         </button>
                         
                         {/* Display the category name */}
-                        <div className="ml-4 text-lg font-bold text-gray-700 flex items-center">
-                            <span className="mr-2 text-xl">{getCategoryIcon(selectedCategory)}</span>
-                            <span>{categoryName}</span>
-                        </div>
+                        <h2 className="ml-4 text-xl font-bold text-gray-700">
+                            {menuData.find(cat => cat.id === selectedCategory)?.name}
+                        </h2>
                     </div>
                     <ProductGrid
                         categoryId={selectedCategory}
@@ -391,10 +508,6 @@ const PosIndex = ({ auth }) => {
     const [alertTitle, setAlertTitle] = useState('');
     const [alertCallback, setAlertCallback] = useState(null);
     const [isConfirm, setIsConfirm] = useState(false);
-    const [showTableOccupancyModal, setShowTableOccupancyModal] = useState(false);
-    const [selectedTableId, setSelectedTableId] = useState(null);
-    const [tableOccupancies, setTableOccupancies] = useState({});
-    const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
     const [tables, setTables] = useState([
         { id: '1', status: 'available' },
         { id: '2', status: 'available' },
@@ -407,7 +520,14 @@ const PosIndex = ({ auth }) => {
         { id: '9', status: 'available' },
         { id: '10', status: 'available' },
         { id: '11', status: 'available' },
-        { id: '12', status: 'available' }
+        { id: '12', status: 'available' },
+        // Patio tables
+        { id: '20', status: 'available' },
+        { id: '21', status: 'available' },
+        { id: '22', status: 'available' },
+        { id: '23', status: 'available' },
+        { id: '24', status: 'available' },
+        { id: '25', status: 'available' },
     ]);
     const [activeFloor, setActiveFloor] = useState('Main Floor');
 
@@ -417,28 +537,13 @@ const PosIndex = ({ auth }) => {
     }, [cart, orderType]);
 
     const updateCounts = () => {
-        const foodItems = cart.filter(item => {
-            // Find the product in any category
-            const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
-            // Check if it's from the food category (id 1)
-            return product && (
-                // Consider items from category 1, 2, 3, 6, and 7 as food
-                [1, 2, 3, 6, 7].includes(menuData.find(cat => 
-                    cat.products.some(p => p.id === item.product_id)
-                )?.id || 0)
-            );
-        }).reduce((sum, item) => sum + item.quantity, 0);
+        const foodItems = cart.filter(item => 
+            menuData.find(p => p.id === item.product_id)?.category_id === 1
+        ).reduce((sum, item) => sum + item.quantity, 0);
         
-        const drinkItems = cart.filter(item => {
-            // Find the product in any category
-            const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
-            // Check if it's from the drinks categories (id 4, 5, 8)
-            return product && (
-                [4, 5, 8].includes(menuData.find(cat => 
-                    cat.products.some(p => p.id === item.product_id)
-                )?.id || 0)
-            );
-        }).reduce((sum, item) => sum + item.quantity, 0);
+        const drinkItems = cart.filter(item => 
+            menuData.find(p => p.id === item.product_id)?.category_id === 2
+        ).reduce((sum, item) => sum + item.quantity, 0);
 
         setFoodCount(foodItems);
         setDrinksCount(drinkItems);
@@ -446,9 +551,9 @@ const PosIndex = ({ auth }) => {
 
     const calculateTotals = () => {
         const newSubtotal = cart.reduce((sum, item) => {
-            let itemTotal = item.quantity * (item.price || item.unit_price);
+            let itemTotal = item.quantity * item.unit_price;
             
-            // Add customization charges if present
+            // Add customization charges
             if (customizations[item.product_id]) {
                 itemTotal += customizations[item.product_id].extraCharge * item.quantity;
             }
@@ -478,49 +583,37 @@ const PosIndex = ({ auth }) => {
         setTotal(newTotal);
     };
 
-    const addToCart = (productId) => {
-        // Check if there's an active order first
+    const addToCart = (product, customizations = null) => {
+        // Check if there's an active order
         if (!activeOrderId) {
             showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
             return;
         }
-        
-        // Find the product in any category
-        const allProducts = menuData.flatMap(cat => cat.products);
-        const product = allProducts.find(p => p.id === productId);
-        
-        if (!product) return;
-        
-        const existingItem = cart.find(item => item.product_id === productId);
-        
+
+        const existingItem = cart.find(item => 
+            item.product_id === product.id && 
+            JSON.stringify(item.customizations) === JSON.stringify(customizations)
+        );
+
         if (existingItem) {
-            const updatedCart = cart.map(item => {
-                if (item.product_id === productId) {
-                    return { 
-                        ...item, 
-                        quantity: item.quantity + 1,
-                        unit_price: item.unit_price || item.price || product.price,
-                        total: product.price * (item.quantity + 1)
-                    };
-                }
-                return item;
-            });
-            setCart(updatedCart);
+            setCart(cart.map(item =>
+                item.product_id === product.id && 
+                JSON.stringify(item.customizations) === JSON.stringify(customizations)
+                    ? { ...item, quantity: item.quantity + 1, subtotal: (item.quantity + 1) * item.unit_price }
+                    : item
+            ));
         } else {
-            setCart([
-                ...cart,
-                {
-                    product_id: productId,
-                    price: product.price,
-                    unit_price: product.price, // Make sure unit_price is set
-                    quantity: 1,
-                    total: product.price,
-                    name: product.name
-                }
-            ]);
+            setCart([...cart, {
+                product_id: product.id,
+                name: product.name,
+                description: product.description,
+                image: product.image,
+                quantity: 1,
+                unit_price: product.price,
+                subtotal: product.price,
+                customizations: customizations
+            }]);
         }
-        
-        // The calculateTotals will be called via useEffect when cart changes
     };
 
     const removeFromCart = (productId) => {
@@ -553,9 +646,8 @@ const PosIndex = ({ auth }) => {
         const newOrder = {
             id: newOrderId,
             items: [],
-            type: 'takeout', // Default type, will be updated when user selects
-            table_number: '', // No table assigned initially
-            numberOfPeople: 0, // Will be set when a table is selected
+            type: 'takeout', // Default type
+            table_number: '',
             notes: '',
             status: 'pending', // En cours
             timestamp: new Date().toLocaleString('fr-FR', {
@@ -582,7 +674,10 @@ const PosIndex = ({ auth }) => {
         setActivePromotion(null);
         setCustomizations({});
         
-        // Show service type selection modal
+        // Make sure we're showing the caisse tab with our new order
+        setActiveTab('caisse');
+        
+        // Show service type modal for the new order
         setShowServiceTypeModal(true);
     };
 
@@ -617,8 +712,7 @@ const PosIndex = ({ auth }) => {
                     notes: notes,
                     subtotal: subtotal,
                     tax: tax,
-                    total: total,
-                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1
+                    total: total
                 }
                 : order
         ));
@@ -687,8 +781,8 @@ const PosIndex = ({ auth }) => {
                 items: cart.map(item => ({
                     name: item.name,
                     quantity: item.quantity,
-                    unit_price: item.unit_price || item.price || 0, // Use unit_price or price, fallback to 0
-                    subtotal: item.quantity * (item.unit_price || item.price || 0),
+                    unit_price: item.unit_price,
+                    subtotal: item.quantity * item.unit_price,
                     customizations: customizations[item.product_id]
                 })),
                 type: orderType,
@@ -708,14 +802,8 @@ const PosIndex = ({ auth }) => {
             };
 
             // Generate the receipt
-            try {
-                const receiptGenerator = Receipt();
-                receiptGenerator.generateReceipt(finalOrder);
-            } catch (receiptError) {
-                console.error('Error generating receipt:', receiptError);
-                // Continue the process even if receipt generation fails
-                // We just log the error but don't stop the payment process
-            }
+            const receiptGenerator = Receipt();
+            receiptGenerator.generateReceipt(finalOrder);
 
             // Remove order from activeOrders
             setActiveOrders(activeOrders.filter(order => order.id !== activeOrderId));
@@ -757,11 +845,11 @@ const PosIndex = ({ auth }) => {
         setOrderType(type);
         setShowServiceTypeModal(false);
         
-        // If eat_in is selected, switch to tables tab
-        if (type === 'eat_in') {
+        // If eat_in is selected and showTables is true, switch to tables tab temporarily
+        if (type === 'eat_in' && showTables) {
             setActiveTab('tables');
         } else {
-            // For takeout and delivery, go to caisse tab
+            // For other service types, make sure we stay on or return to caisse tab
             setActiveTab('caisse');
         }
     };
@@ -779,19 +867,9 @@ const PosIndex = ({ auth }) => {
             return;
         }
 
-        if (product) {
-            // Store customizations if any
-            if (customizations) {
-                setCustomizations({
-                    ...customizations,
-                    [product.id]: customizations
-                });
-            }
-            
-            // Add product to cart
-            addToCart(product.id);
+        if (customizations) {
+            addToCart(product, customizations);
         }
-        
         setShowCustomizeModal(false);
     };
 
@@ -842,41 +920,22 @@ const PosIndex = ({ auth }) => {
     };
 
     const handleTableSelect = (tableId) => {
-        console.log('Table selected:', tableId);
-        
         // Check if table is already occupied
         const tableOccupied = activeOrders.some(order => 
             order.status === 'pending' && order.table_number === tableId
         );
         
         if (tableOccupied) {
-            console.log('Table is occupied, showing modify modal');
-            // Table is occupied - show modify occupancy modal
-            setSelectedTableId(tableId);
-            setIsSelectedTableOccupied(true);
-            
-            // Find the current order for this table to get number of people
-            const currentOrder = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
-            );
-            
-            // Set initial people from the existing order or default to 1
-            const currentPeople = currentOrder?.numberOfPeople || 1;
-            setShowTableOccupancyModal(true);
-        } else {
-            // Check if there's an active order before allowing selection of an empty table
-            if (!activeOrderId) {
-                console.log('No active order, showing alert');
-                showAlert('Please create a new order before selecting a table.', 'Action Required');
-                return;
-            }
-            
-            console.log('Table is available, showing new occupancy modal');
-            // Table is available - show new occupancy modal
-            setSelectedTableId(tableId);
-            setIsSelectedTableOccupied(false);
-            setShowTableOccupancyModal(true);
+            showAlert('Cette table est déjà occupée.', 'Attention');
+            return;
         }
+        
+        // Set the table number
+        setTableNumber(tableId);
+        setOrderType('eat_in');
+        
+        // Switch to the Caisse tab
+        setActiveTab('caisse');
     };
 
     // Update table status whenever activeOrders changes
@@ -920,110 +979,6 @@ const PosIndex = ({ auth }) => {
         console.log(`Editing item at index: ${index}`);
     };
 
-    const handleKeypadInput = (num) => {
-        if (!selectedProduct) return;
-        
-        const currentQty = cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0;
-        
-        if (num === '⌫') {
-            if (currentQty < 10) {
-                updateQuantity(selectedProduct.id, 0);
-            } else {
-                updateQuantity(selectedProduct.id, Math.floor(currentQty / 10));
-            }
-        } else if (num === 'CE') {
-            updateQuantity(selectedProduct.id, 0);
-            setStartNewInput(true);
-        } else {
-            if (startNewInput || currentQty === 0) {
-                updateQuantity(selectedProduct.id, parseInt(num));
-            } else {
-                const newQty = parseInt(currentQty.toString() + num);
-                updateQuantity(selectedProduct.id, newQty);
-            }
-            setStartNewInput(false);
-        }
-    };
-
-    // Add a new function to handle table occupancy
-    const handleTableOccupancySave = (tableId, numberOfPeople, cancelOrder = false) => {
-        if (cancelOrder) {
-            // Cancel the order for this table
-            const orderToCancel = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
-            );
-            
-            if (orderToCancel) {
-                setActiveOrders(activeOrders.map(order => 
-                    order.id === orderToCancel.id
-                        ? { ...order, status: 'cancelled' } 
-                        : order
-                ));
-                
-                // If cancelling the active order, clear the cart
-                if (orderToCancel.id === activeOrderId) {
-                    setCart([]);
-                    setActiveOrderId(null);
-                }
-            }
-            
-            // Update table occupancies
-            const updatedOccupancies = { ...tableOccupancies };
-            delete updatedOccupancies[tableId];
-            setTableOccupancies(updatedOccupancies);
-            
-            return;
-        }
-        
-        // Store the number of people for this table
-        setTableOccupancies({
-            ...tableOccupancies,
-            [tableId]: numberOfPeople
-        });
-        
-        if (isSelectedTableOccupied) {
-            // Update existing order with new number of people
-            const orderToUpdate = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
-            );
-            
-            if (orderToUpdate) {
-                setActiveOrders(activeOrders.map(order => 
-                    order.id === orderToUpdate.id
-                        ? { ...order, numberOfPeople: numberOfPeople } 
-                        : order
-                ));
-                
-                // If updating the active order, update the state
-                if (orderToUpdate.id === activeOrderId) {
-                    // Just update the number of people in the current order
-                }
-            }
-        } else {
-            // We know there's an active order because of the check in handleTableSelect
-            // Just update the current active order with the table number and people
-            setTableNumber(tableId);
-            setOrderType('eat_in');
-            
-            // Update the current active order with the table number and people
-            saveCurrentOrderState();
-            
-            setActiveOrders(activeOrders.map(order => 
-                order.id === activeOrderId
-                    ? { 
-                        ...order, 
-                        type: 'eat_in',
-                        table_number: tableId,
-                        numberOfPeople: numberOfPeople
-                    }
-                    : order
-            ));
-        }
-        
-        // Switch to the Caisse tab
-        setActiveTab('caisse');
-    };
-
     return (
         <AuthenticatedLayout>
             <Head title="Système de Caisse" />
@@ -1031,26 +986,26 @@ const PosIndex = ({ auth }) => {
             <div className="min-h-screen bg-gray-100">
                 <Head title="Point of Sale" />
                 <div className="flex h-screen">
-                    {/* Left Side - Cart - Increase width for wider keypad */}
-                    <div className="w-1/3 md:w-2/5 lg:w-2/5 xl:w-1/3 bg-white flex flex-col shadow-lg">
+                    {/* Left Side - Cart - Wider to show more content */}
+                    <div className="w-2/5 bg-white flex flex-col shadow-lg">
                        
                         {/* Cart Header - more compact with active orders */}
                         <div className="p-3 bg-blue-900 text-white">
                             <div className="flex justify-between items-center">
                                 <h2 className="text-lg font-semibold">Panier</h2>
-                                <div className="flex gap-1">
+                                <div className="flex gap-2">
                                     <button
                                         onClick={handleNewOrder}
-                                        className="px-2 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm font-medium min-w-[90px] h-10 flex items-center justify-center shadow-md"
+                                        className="px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm font-medium min-w-[100px] h-10 flex items-center justify-center shadow-md"
                                     >
-                                        <PlusIcon className="h-4 w-4 mr-1" />
+                                        <PlusIcon className="h-5 w-5 mr-1" />
                                         Nouvelle
                                     </button>
                                     <div className="relative group">
                                         <button
-                                            className="px-2 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 text-sm font-medium min-w-[90px] h-10 flex items-center justify-center shadow-md"
+                                            className="px-3 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 text-sm font-medium min-w-[100px] h-10 flex items-center justify-center shadow-md"
                                         >
-                                            <ClipboardDocumentIcon className="h-4 w-4 mr-1" />
+                                            <ClipboardDocumentIcon className="h-5 w-5 mr-1" />
                                             Commandes <span className="ml-1 bg-white text-blue-900 rounded-full h-5 w-5 flex items-center justify-center text-xs">{activeOrders.filter(o => o.status === 'pending').length}</span>
                                         </button>
                                         
@@ -1086,11 +1041,11 @@ const PosIndex = ({ auth }) => {
                                     {/* History Button */}
                                     <button
                                         onClick={() => setShowOrderHistory(!showOrderHistory)}
-                                        className={`px-2 py-2 rounded-md text-sm font-medium min-w-[90px] h-10 flex items-center justify-center shadow-md ${
+                                        className={`px-3 py-2 rounded-md text-sm font-medium min-w-[100px] h-10 flex items-center justify-center shadow-md ${
                                             showOrderHistory ? 'bg-indigo-700 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                                         }`}
                                     >
-                                        <ClockIcon className="h-4 w-4 mr-1" />
+                                        <ClockIcon className="h-5 w-5 mr-1" />
                                         Historique
                                     </button>
                                 </div>
@@ -1134,50 +1089,50 @@ const PosIndex = ({ auth }) => {
                             </div>
                         </div>
 
-                        {/* Cart Items - More compact display */}
-                        <div className="flex-1 overflow-auto px-2 py-2">
+                        {/* Cart Items - Improved item display */}
+                        <div className="flex-1 overflow-auto px-4 py-2">
                             {cart.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <ShoppingCartIcon className="h-12 w-12 mb-2" />
-                                    <p className="text-base font-medium">Le panier est vide</p>
-                                    <p className="text-xs">Ajoutez des produits depuis la grille</p>
+                                    <ShoppingCartIcon className="h-16 w-16 mb-4" />
+                                    <p className="text-xl font-medium">Le panier est vide</p>
+                                    <p className="text-sm">Ajoutez des produits depuis la grille</p>
                                 </div>
                             ) : (
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {cart.map((item, index) => (
                                         <div 
                                             key={index} 
                                             onClick={() => {
-                                                const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
+                                                const product = menuData.find(p => p.id === item.product_id);
                                                 if (product) {
                                                     setSelectedProduct(product);
                                                     setStartNewInput(true);
                                                 }
                                             }}
-                                            className={`bg-white rounded-lg shadow p-2 flex justify-between items-center cursor-pointer transition-colors ${
+                                            className={`bg-white rounded-lg shadow p-3 flex justify-between items-center cursor-pointer transition-colors ${
                                                 selectedProduct?.id === item.product_id ? 'bg-blue-50 border-l-4 border-l-blue-500 pl-2' : ''
                                             }`}
                                         >
-                                            <div className="flex-1 pr-2">
-                                                <div className="font-medium text-sm">{item.name}</div>
-                                                <div className="text-gray-600 text-xs">
+                                            <div className="flex-1">
+                                                <div className="font-medium">{item.name}</div>
+                                                <div className="text-gray-600">
                                                     {formatPrice(item.unit_price || item.price)} x {item.quantity}
                                                 </div>
                                                 {item.notes && (
-                                                    <div className="text-xs text-gray-500 italic">
+                                                    <div className="text-xs text-gray-500 mt-1 italic">
                                                         Note: {item.notes}
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center space-x-1">
-                                                <div className="font-bold text-gray-800 text-sm">
+                                            <div className="flex items-center space-x-2">
+                                                <div className="font-bold text-gray-800">
                                                     {formatPrice((item.unit_price || item.price) * item.quantity)}
                                                 </div>
                                                 <div className="flex flex-col space-y-1">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
+                                                            const product = menuData.find(p => p.id === item.product_id);
                                                             if (product) {
                                                                 setSelectedProduct(product);
                                                                 setStartNewInput(true);
@@ -1185,7 +1140,7 @@ const PosIndex = ({ auth }) => {
                                                         }}
                                                         className="p-1 rounded hover:bg-gray-100"
                                                     >
-                                                        <PencilIcon className="h-3 w-3 text-blue-500" />
+                                                        <PencilIcon className="h-4 w-4 text-blue-500" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -1197,7 +1152,7 @@ const PosIndex = ({ auth }) => {
                                                         }}
                                                         className="p-1 rounded hover:bg-gray-100"
                                                     >
-                                                        <TrashIcon className="h-3 w-3 text-red-500" />
+                                                        <TrashIcon className="h-4 w-4 text-red-500" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -1210,7 +1165,7 @@ const PosIndex = ({ auth }) => {
                         
 
                         {/* Taxes and Total - more compact */}
-                        <div className="border-t border-gray-200 p-1 bg-gray-50">
+                        <div className="border-t border-gray-200 p-2 bg-gray-50">
                             <div className="space-y-1">
                                 <div className="flex justify-between text-xs text-gray-600">
                                     <span>Sous-total</span>
@@ -1224,8 +1179,8 @@ const PosIndex = ({ auth }) => {
                                     <div className="flex justify-between text-xs text-gray-600">
                                         <span>Frais livraison</span>
                                         <span>{deliverySurcharge.toFixed(2)} MAD</span>
-                                    </div>
-                                )}
+                            </div>
+                        )}
                                 {activePromotion && (
                                     <div className="flex justify-between text-xs text-green-600">
                                         <span className="truncate">{activePromotion.name}</span>
@@ -1240,86 +1195,47 @@ const PosIndex = ({ auth }) => {
                             </div>
                         </div>
 
-                        {/* Numeric Keypad - traditional calculator layout */}
-                        <div className="border-t border-gray-200 bg-gray-50 p-2">
-                            <div className="grid grid-cols-4 gap-2">
+                        {/* Numeric Keypad - larger for touch */}
+                        <div className="border-t border-gray-200">
+                            <div className="grid grid-cols-4 gap-0">
                                 <div className="col-span-3">
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button 
-                                            onClick={() => handleKeypadInput(1)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            1
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(2)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            2
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(3)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            3
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(4)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            4
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(5)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            5
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(6)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            6
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(7)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            7
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(8)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            8
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(9)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            9
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(0)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            0
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput('CE')}
-                                            className="flex items-center justify-center text-lg font-medium bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            CE
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput('⌫')}
-                                            className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-14 shadow"
-                                        >
-                                            ⌫
-                                        </button>
+                                    <div className="grid grid-cols-3 gap-0">
+                                        {[7, 8, 9, 4, 5, 6, 1, 2, 3, 0, 'CE', '⌫'].map((num) => (
+                                            <button 
+                                                key={num}
+                                                onClick={() => {
+                                                    if (selectedProduct) {
+                                                        const currentQty = cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0;
+                                                        if (num === '⌫') {
+                                                            if (currentQty < 10) {
+                                                                updateQuantity(selectedProduct.id, 0);
+                                                            } else {
+                                                                updateQuantity(selectedProduct.id, Math.floor(currentQty / 10));
+                                                            }
+                                                        } else if (num === 'CE') {
+                                                            updateQuantity(selectedProduct.id, 0);
+                                                            setStartNewInput(true);
+                                                        } else {
+                                                            if (startNewInput || currentQty === 0) {
+                                                                updateQuantity(selectedProduct.id, parseInt(num));
+                                                            } else {
+                                                                const newQty = parseInt(currentQty.toString() + num);
+                                                                updateQuantity(selectedProduct.id, newQty);
+                                                            }
+                                                            setStartNewInput(false);
+                                                        }
+                                                    }
+                                                }}
+                                                className={`p-4 text-xl font-medium hover:bg-gray-100 border-r border-b transition-colors h-16 ${
+                                                    (num === 'CE') ? 'text-blue-600' : ''
+                                                }`}
+                                            >
+                                                {num}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col">
                                     <button
                                         onClick={() => {
                                             if (selectedProduct) {
@@ -1327,7 +1243,7 @@ const PosIndex = ({ auth }) => {
                                                 updateQuantity(selectedProduct.id, currentQty + 1);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors h-14 shadow"
+                                        className="p-4 text-xl font-medium hover:bg-gray-100 border-b transition-colors h-16"
                                     >
                                         +
                                     </button>
@@ -1340,7 +1256,7 @@ const PosIndex = ({ auth }) => {
                                                 }
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded transition-colors h-14 shadow"
+                                        className="p-4 text-xl font-medium hover:bg-gray-100 border-b transition-colors h-16"
                                     >
                                         -
                                     </button>
@@ -1351,13 +1267,13 @@ const PosIndex = ({ auth }) => {
                                                 setSelectedProduct(null);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-14 shadow"
+                                        className="p-4 text-xl font-medium hover:bg-gray-100 border-b transition-colors text-red-600 h-16"
                                     >
                                         C
                                     </button>
                                     <button 
                                         onClick={() => setShowPaymentModal(true)}
-                                        className="flex items-center justify-center text-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-1 rounded shadow-md"
+                                        className="p-4 text-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-1"
                                     >
                                         ↵
                                     </button>
@@ -1366,7 +1282,7 @@ const PosIndex = ({ auth }) => {
                         </div>
 
                         {/* Bottom Navigation - Payment button */}
-                        <div className="p-2 bg-white border-t">
+                        <div className="p-3 bg-white border-t">
                             <button
                                 onClick={() => setShowPaymentModal(true)}
                                 disabled={!activeOrderId || cart.length === 0}
@@ -1376,14 +1292,14 @@ const PosIndex = ({ auth }) => {
                                         : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
                                 }`}
                             >
-                                <BanknotesIcon className="h-5 w-5 mr-2" />
+                                <BanknotesIcon className="h-6 w-6 mr-2" />
                                 Payer ({total.toFixed(2)} MAD)
                             </button>
                         </div>
                     </div>
 
-                    {/* Right Side - Products or Tables - Adjust width to match left side changes */}
-                    <div className="w-2/3 md:w-3/5 lg:w-3/5 xl:w-2/3 flex flex-col bg-gray-100">
+                    {/* Right Side - Products or Tables - Adjusted width proportion */}
+                    <div className="w-3/5 flex flex-col bg-gray-100">
                         {/* Top Navigation Tabs */}
                         <div className="bg-white shadow-md mb-2">
                             <div className="max-w-7xl mx-auto p-2">
@@ -1459,23 +1375,16 @@ const PosIndex = ({ auth }) => {
                                                         {tables.filter(table => parseInt(table.id) < 20).map(table => (
                                                             <div 
                                                                 key={table.id}
-                                                                onClick={() => handleTableSelect(table.id)}
+                                                                onClick={() => table.status !== 'occupied' && handleTableSelect(table.id)}
                                                                 className={`relative ${
                                                                     table.status === 'occupied' 
                                                                         ? 'bg-red-400 border-red-600' 
                                                                         : 'bg-green-400 border-green-600'
                                                                 } ${
                                                                     parseInt(table.id) > 8 ? 'w-48 h-32' : 'w-32 h-32'
-                                                                } rounded-md flex flex-col items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
+                                                                } rounded-md flex items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
                                                             >
                                                                 <span className="text-2xl font-bold">{table.id}</span>
-                                                                
-                                                                {/* Show number of people if table is occupied */}
-                                                                {table.status === 'occupied' && (
-                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
-                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
-                                                                    </div>
-                                                                )}
                                                                 
                                                                 {/* Table Chairs */}
                                                                 <div className="absolute -top-6 left-10 w-12 h-6 bg-blue-300 rounded-t-full"></div>
@@ -1502,22 +1411,14 @@ const PosIndex = ({ auth }) => {
                                                         {tables.filter(table => parseInt(table.id) >= 20).map(table => (
                                                             <div 
                                                                 key={table.id}
-                                                                onClick={() => handleTableSelect(table.id)}
+                                                                onClick={() => table.status !== 'occupied' && handleTableSelect(table.id)}
                                                                 className={`relative ${
                                                                     table.status === 'occupied' 
                                                                         ? 'bg-red-400 border-red-600' 
                                                                         : 'bg-green-400 border-green-600'
-                                                                } w-32 h-32 rounded-full flex flex-col items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
+                                                                } w-32 h-32 rounded-full flex items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
                                                             >
                                                                 <span className="text-2xl font-bold">{table.id}</span>
-                                                                
-                                                                {/* Show number of people if table is occupied */}
-                                                                {table.status === 'occupied' && (
-                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
-                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
-                                                                    </div>
-                                                                )}
-                                                                
                                                                 {/* Round Table Chairs */}
                                                                 <div className="absolute -top-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
                                                                 <div className="absolute top-12 -right-6 w-8 h-8 bg-blue-300 rounded-full"></div>
@@ -1549,33 +1450,46 @@ const PosIndex = ({ auth }) => {
                         {/* Cash Register (Caisse) View */}
                         {activeTab === 'caisse' && (
                             <>
-                                {/* Categories Menu - Replaces Service Type Pills */}
-                                <div className="bg-white p-3 mb-2 border-b overflow-x-auto">
-                                    <div className="flex items-center space-x-4 px-2">
-                                        {menuData.map(category => (
-                                            <button
-                                                key={category.id}
-                                                onClick={() => setActiveCategory(category.id)}
-                                                className={`px-4 py-2 rounded-full flex items-center whitespace-nowrap ${
-                                                    activeCategory === category.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                }`}
-                                            >
-                                                <span className="mr-2">{
-                                                    category.id === 1 ? '🍽️' : 
-                                                    category.id === 2 ? '🥗' : 
-                                                    category.id === 3 ? '🍰' : 
-                                                    category.id === 4 ? '🥤' : 
-                                                    category.id === 5 ? '🍷' : 
-                                                    category.id === 6 ? '🍿' : 
-                                                    category.id === 7 ? '🥖' : '☕'
-                                                }</span>
-                                                {category.name}
-                                            </button>
-                                        ))}
+                                {/* Service Type Pills */}
+                                <div className="bg-white p-3 mb-2 border-b">
+                                    <div className="flex items-center justify-center space-x-4">
+                                        <button
+                                            onClick={() => setOrderType('eat_in')}
+                                            className={`px-4 py-2 rounded-full flex items-center ${
+                                                orderType === 'eat_in' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
+                                            }`}
+                                        >
+                                            <HomeIcon className="w-5 h-5 mr-2" />
+                                            Sur Place {tableNumber && `- Table ${tableNumber}`}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setOrderType('takeout');
+                                                setTableNumber('');
+                                            }}
+                                            className={`px-4 py-2 rounded-full flex items-center ${
+                                                orderType === 'takeout' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
+                                            }`}
+                                        >
+                                            <ShoppingBagIcon className="w-5 h-5 mr-2" />
+                                            À Emporter
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setOrderType('delivery');
+                                                setTableNumber('');
+                                            }}
+                                            className={`px-4 py-2 rounded-full flex items-center ${
+                                                orderType === 'delivery' ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
+                                            }`}
+                                        >
+                                            <MapPinIcon className="w-5 h-5 mr-2" />
+                                            Livraison
+                                        </button>
                                     </div>
                                 </div>
                                 
-                                {/* Products Section */}
+                                {/* Products Section - Uses the new ProductSection component */}
                                 <div className="flex-1 overflow-auto">
                                     <ProductSection 
                                         onProductSelect={(product) => {
@@ -1625,15 +1539,6 @@ const PosIndex = ({ auth }) => {
                 onClose={() => setShowPaymentModal(false)}
                 onComplete={handlePayment}
                 total={total}
-            />
-
-            <TableOccupancyModal
-                isOpen={showTableOccupancyModal}
-                onClose={() => setShowTableOccupancyModal(false)}
-                onSave={handleTableOccupancySave}
-                tableId={selectedTableId}
-                initialPeople={tableOccupancies[selectedTableId] || 1}
-                isOccupied={isSelectedTableOccupied}
             />
 
             {/* Order History Log overlay */}
