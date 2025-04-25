@@ -23,156 +23,10 @@ import {
     XMarkIcon
 } from '@heroicons/react/24/solid';
 
-// Menu Data Structure
-const menuData = [
-  {
-    id: 1,
-    name: "Plats Principaux",
-    products: [
-      { id: 1, name: "Poulet rôti", description: "Roast Chicken", price: 15.99 },
-      { id: 2, name: "Bœuf bourguignon", description: "Beef Bourguignon", price: 18.99 },
-      { id: 3, name: "Lasagne", description: "Classic Lasagna", price: 14.99 },
-      { id: 4, name: "Poisson grillé", description: "Grilled Fish", price: 17.99 },
-      { id: 5, name: "Curry de légumes", description: "Vegetable Curry", price: 13.99 },
-      { id: 6, name: "Tacos de viande", description: "Meat Tacos", price: 12.99 },
-      { id: 7, name: "Risotto aux champignons", description: "Mushroom Risotto", price: 16.99 },
-      { id: 8, name: "Pizza Margherita", description: "Classic Margherita Pizza", price: 13.99 },
-      { id: 9, name: "Quiche Lorraine", description: "Classic Quiche", price: 11.99 },
-      { id: 10, name: "Couscous aux légumes", description: "Vegetable Couscous", price: 12.99 },
-      { id: 11, name: "Sauté de porc", description: "Pork Stir-fry", price: 15.99 },
-      { id: 12, name: "Chili con carne", description: "Spicy Chili", price: 14.99 }
-    ]
-  },
-  {
-    id: 2,
-    name: "Entrées",
-    products: [
-      { id: 13, name: "Salade César", description: "Caesar Salad", price: 8.99 },
-      { id: 14, name: "Soupe à l'oignon", description: "French Onion Soup", price: 7.99 },
-      { id: 15, name: "Bruschetta", description: "Italian Bruschetta", price: 6.99 },
-      { id: 16, name: "Bouchées de fromage", description: "Cheese Bites", price: 7.99 },
-      { id: 17, name: "Calamars frits", description: "Fried Calamari", price: 9.99 },
-      { id: 18, name: "Mini quiches", description: "Mini Quiches", price: 8.99 },
-      { id: 19, name: "Tapenade avec pain", description: "Tapenade with Bread", price: 6.99 },
-      { id: 20, name: "Croquettes de pommes de terre", description: "Potato Croquettes", price: 7.99 },
-      { id: 21, name: "Antipasti platter", description: "Italian Antipasti", price: 12.99 },
-      { id: 22, name: "Hummus avec pita", description: "Hummus with Pita", price: 7.99 },
-      { id: 23, name: "Gyoza", description: "Japanese Dumplings", price: 8.99 },
-      { id: 24, name: "Nachos avec salsa", description: "Nachos with Salsa", price: 8.99 }
-    ]
-  },
-  {
-    id: 3,
-    name: "Desserts",
-    products: [
-      { id: 25, name: "Tarte aux pommes", description: "Apple Pie", price: 6.99 },
-      { id: 26, name: "Crème brûlée", description: "Classic Crème Brûlée", price: 7.99 },
-      { id: 27, name: "Mousse au chocolat", description: "Chocolate Mousse", price: 6.99 },
-      { id: 28, name: "Tiramisu", description: "Italian Tiramisu", price: 7.99 },
-      { id: 29, name: "Cheesecake", description: "New York Cheesecake", price: 7.99 },
-      { id: 30, name: "Panna cotta", description: "Italian Panna Cotta", price: 6.99 },
-      { id: 31, name: "Macarons", description: "French Macarons", price: 8.99 },
-      { id: 32, name: "Brownies", description: "Chocolate Brownies", price: 5.99 },
-      { id: 33, name: "Profiteroles", description: "Cream Puffs", price: 7.99 },
-      { id: 34, name: "Gâteau au chocolat", description: "Chocolate Cake", price: 6.99 },
-      { id: 35, name: "Crêpes Suzette", description: "Classic French Crêpes", price: 8.99 },
-      { id: 36, name: "Glaces artisanales", description: "Artisanal Ice Cream", price: 5.99 }
-    ]
-  },
-  {
-    id: 4,
-    name: "Boissons Non-Alcoolisées",
-    products: [
-      { id: 37, name: "Eau minérale", description: "Mineral Water", price: 2.99 },
-      { id: 38, name: "Soda", description: "Soft Drinks", price: 3.99 },
-      { id: 39, name: "Jus d'orange", description: "Orange Juice", price: 3.99 },
-      { id: 40, name: "Limonade", description: "Fresh Lemonade", price: 3.99 },
-      { id: 41, name: "Thé glacé", description: "Iced Tea", price: 3.99 },
-      { id: 42, name: "Smoothie aux fruits", description: "Fruit Smoothie", price: 5.99 },
-      { id: 43, name: "Lait au chocolat", description: "Chocolate Milk", price: 3.99 },
-      { id: 44, name: "Café décaféiné", description: "Decaf Coffee", price: 3.99 },
-      { id: 45, name: "Boisson énergisante", description: "Energy Drink", price: 4.99 },
-      { id: 46, name: "Eau aromatisée", description: "Flavored Water", price: 3.99 },
-      { id: 47, name: "Jus de pomme", description: "Apple Juice", price: 3.99 },
-      { id: 48, name: "Boisson au yaourt", description: "Yogurt Drink", price: 4.99 }
-    ]
-  },
-  {
-    id: 5,
-    name: "Boissons Alcoolisées",
-    products: [
-      { id: 49, name: "Vin rouge", description: "Red Wine", price: 6.99 },
-      { id: 50, name: "Vin blanc", description: "White Wine", price: 6.99 },
-      { id: 51, name: "Bière blonde", description: "Blonde Beer", price: 5.99 },
-      { id: 52, name: "Bière brune", description: "Brown Beer", price: 5.99 },
-      { id: 53, name: "Whisky", description: "Premium Whisky", price: 8.99 },
-      { id: 54, name: "Vodka", description: "Premium Vodka", price: 7.99 },
-      { id: 55, name: "Rhum", description: "Caribbean Rum", price: 7.99 },
-      { id: 56, name: "Tequila", description: "Mexican Tequila", price: 7.99 },
-      { id: 57, name: "Champagne", description: "French Champagne", price: 12.99 },
-      { id: 58, name: "Sangria", description: "Spanish Sangria", price: 6.99 },
-      { id: 59, name: "Cocktails variés", description: "Various Cocktails", price: 9.99 },
-      { id: 60, name: "Liqueurs", description: "Assorted Liqueurs", price: 7.99 }
-    ]
-  },
-  {
-    id: 6,
-    name: "Snacks",
-    products: [
-      { id: 61, name: "Chips de pommes de terre", description: "Potato Chips", price: 3.99 },
-      { id: 62, name: "Popcorn", description: "Fresh Popcorn", price: 3.99 },
-      { id: 63, name: "Amandes grillées", description: "Roasted Almonds", price: 4.99 },
-      { id: 64, name: "Barres granola", description: "Granola Bars", price: 2.99 },
-      { id: 65, name: "Fruits secs", description: "Dried Fruits", price: 4.99 },
-      { id: 66, name: "Crackers", description: "Assorted Crackers", price: 3.99 },
-      { id: 67, name: "Fromage en cubes", description: "Cheese Cubes", price: 5.99 },
-      { id: 68, name: "Olives", description: "Mixed Olives", price: 4.99 },
-      { id: 69, name: "Bâtonnets de légumes avec dip", description: "Veggie Sticks with Dip", price: 5.99 },
-      { id: 70, name: "Mini pretzels", description: "Mini Pretzels", price: 3.99 },
-      { id: 71, name: "Mélange de noix", description: "Mixed Nuts", price: 5.99 },
-      { id: 72, name: "Gâteaux apéritifs", description: "Savory Cakes", price: 4.99 }
-    ]
-  },
-  {
-    id: 7,
-    name: "Produits de Boulangerie",
-    products: [
-      { id: 73, name: "Baguette", description: "French Baguette", price: 2.99 },
-      { id: 74, name: "Pain de seigle", description: "Rye Bread", price: 3.99 },
-      { id: 75, name: "Croissant", description: "Butter Croissant", price: 2.99 },
-      { id: 76, name: "Pain au chocolat", description: "Chocolate Bread", price: 3.99 },
-      { id: 77, name: "Brioche", description: "French Brioche", price: 3.99 },
-      { id: 78, name: "Pain pita", description: "Pita Bread", price: 2.99 },
-      { id: 79, name: "Muffins", description: "Assorted Muffins", price: 3.99 },
-      { id: 80, name: "Scones", description: "English Scones", price: 3.99 },
-      { id: 81, name: "Focaccia", description: "Italian Focaccia", price: 4.99 },
-      { id: 82, name: "Pain aux noix", description: "Nut Bread", price: 4.99 },
-      { id: 83, name: "Tartes salées", description: "Savory Tarts", price: 5.99 },
-      { id: 84, name: "Gâteaux de mariage", description: "Wedding Cakes", price: 99.99 }
-    ]
-  },
-  {
-    id: 8,
-    name: "Boissons Chaudes",
-    products: [
-      { id: 85, name: "Espresso", description: "Strong Espresso", price: 2.99 },
-      { id: 86, name: "Cappuccino", description: "Italian Cappuccino", price: 3.99 },
-      { id: 87, name: "Latte", description: "Café Latte", price: 3.99 },
-      { id: 88, name: "Thé noir", description: "Black Tea", price: 2.99 },
-      { id: 89, name: "Thé vert", description: "Green Tea", price: 2.99 },
-      { id: 90, name: "Thé aux fruits", description: "Fruit Tea", price: 3.99 },
-      { id: 91, name: "Chocolat chaud épicé", description: "Spiced Hot Chocolate", price: 4.99 },
-      { id: 92, name: "Infusion de camomille", description: "Chamomile Infusion", price: 2.99 },
-      { id: 93, name: "Lait chaud au miel", description: "Hot Milk with Honey", price: 3.99 },
-      { id: 94, name: "Tisane à la menthe", description: "Mint Herbal Tea", price: 2.99 },
-      { id: 95, name: "Café au lait", description: "Coffee with Milk", price: 3.99 },
-      { id: 96, name: "Chai latte", description: "Spiced Chai Latte", price: 4.99 }
-    ]
-  }
-];
+// Note: menuData is now defined in the PosIndex component to avoid ReferenceError
 
 // ProductGrid Component
-const ProductGrid = ({ categoryId, onProductSelect }) => {
+const ProductGrid = ({ categoryId, onProductSelect, menuData }) => {
     // Find the selected category and its products
     const category = menuData.find(cat => cat.id === categoryId);
     const products = category ? category.products : [];
@@ -223,23 +77,23 @@ const ProductGrid = ({ categoryId, onProductSelect }) => {
 
 // Category icons mapping
 const categoryIcons = {
-    1: "🍽️", // Plats Principaux
-    2: "🥗", // Entrées
-    3: "🍰", // Desserts
-    4: "🥤", // Boissons Non-Alcoolisées
-    5: "🍷", // Boissons Alcoolisées
-    6: "🍿", // Snacks
-    7: "🥖", // Produits de Boulangerie
-    8: "☕", // Boissons Chaudes
+    1: "🍱", // Plats
+    2: "🥤", // Boissons
+    3: "🍕", // Pizzas
+    4: "🍰", // Desserts
+    5: "🥗", // Salades
+    6: "🍝", // Pâtes
+    7: "🦞", // Fruits de Mer
+    8: "🥪", // Sandwich
 };
 
 // CategoryCards Component
-const CategoryCards = ({ onCategorySelect }) => {
+const CategoryCards = ({ onCategorySelect, menuData }) => {
     // Category color mapping
     const categoryColors = {
         1: "#FF9AA2", // Plats Principaux - Soft red
         2: "#FFB7B2", // Entrées - Soft salmon
-        3: "#FFDAC1", // Desserts - Soft peach
+        3: "FFDAC1", // Desserts - Soft peach
         4: "#E2F0CB", // Boissons Non-Alcoolisées - Soft green
         5: "#B5EAD7", // Boissons Alcoolisées - Soft mint
         6: "#C7CEEA", // Snacks - Soft blue
@@ -249,27 +103,27 @@ const CategoryCards = ({ onCategorySelect }) => {
 
     // Category icon mapping
     const categoryIcons = {
-        1: "🍽️", // Plats Principaux
-        2: "🥗", // Entrées
-        3: "🍰", // Desserts
-        4: "🥤", // Boissons Non-Alcoolisées
-        5: "🍷", // Boissons Alcoolisées
-        6: "🍿", // Snacks
-        7: "🥖", // Produits de Boulangerie
-        8: "☕", // Boissons Chaudes
+        1: "🍱", // Plats
+        2: "🥤", // Boissons
+        3: "🍕", // Pizzas
+        4: "🍰", // Desserts
+        5: "🥗", // Salades
+        6: "🍝", // Pâtes
+        7: "🦞", // Fruits de Mer
+        8: "🥪", // Sandwich
     };
 
     return (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 p-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
             {menuData.map(category => (
                 <div
                     key={category.id}
                     onClick={() => onCategorySelect(category.id)}
-                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-28 sm:h-32"
+                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-32"
                     style={{ backgroundColor: categoryColors[category.id] + '30' }}
                 >
-                    <div className="p-3 flex flex-col items-center justify-center h-full">
-                        <div className="text-3xl mb-1">{categoryIcons[category.id]}</div>
+                    <div className="p-4 flex flex-col items-center justify-center h-full">
+                        <div className="text-4xl mb-2">{categoryIcons[category.id]}</div>
                         <h3 className="font-semibold text-sm text-gray-800 text-center">{category.name}</h3>
                         <p className="text-xs text-gray-600 mt-1">{category.products.length} articles</p>
                     </div>
@@ -280,7 +134,7 @@ const CategoryCards = ({ onCategorySelect }) => {
 };
 
 // ProductSection Component
-const ProductSection = ({ onProductSelect, activeCategory }) => {
+const ProductSection = ({ onProductSelect, activeCategory, menuData }) => {
     const [selectedCategory, setSelectedCategory] = useState(null);
 
     // Update selectedCategory when activeCategory changes (from filter buttons)
@@ -303,14 +157,14 @@ const ProductSection = ({ onProductSelect, activeCategory }) => {
     // Get the category icon for the selected category
     const getCategoryIcon = (categoryId) => {
         const icons = {
-            1: "🍽️",
-            2: "🥗",
-            3: "🍰",
-            4: "🥤",
-            5: "🍷",
-            6: "🍿", 
-            7: "🥖",
-            8: "☕"
+            1: "🍱", // Plats
+            2: "🥤", // Boissons
+            3: "🍕", // Pizzas
+            4: "🍰", // Desserts
+            5: "🥗", // Salades
+            6: "🍝", // Pâtes
+            7: "🦞", // Fruits de Mer
+            8: "🥪", // Sandwich
         };
         return icons[categoryId] || "📋";
     };
@@ -344,17 +198,784 @@ const ProductSection = ({ onProductSelect, activeCategory }) => {
                     <ProductGrid
                         categoryId={selectedCategory}
                         onProductSelect={onProductSelect}
+                        menuData={menuData}
                     />
                 </>
             ) : (
-                <CategoryCards onCategorySelect={handleCategorySelect} />
+                <CategoryCards onCategorySelect={handleCategorySelect} menuData={menuData} />
             )}
         </div>
     );
 };
 
 const PosIndex = ({ auth }) => {
-    // Static Categories Data - Replaced by the CategoryCards component
+    // Static Categories Data
+    const [categories] = useState([
+        { id: 1, name: "Plats", color: "#4F46E5" }, // Indigo for main dishes
+        { id: 2, name: "Boissons", color: "#10B981" }, // Emerald for drinks
+        { id: 3, name: "Pizzas", color: "#F59E0B" }, // Amber for pizzas
+        { id: 4, name: "Desserts", color: "#EC4899" }, // Pink for desserts
+        { id: 5, name: "Salades", color: "#34D399" }, // Emerald for salads
+        { id: 6, name: "Pâtes", color: "#F97316" }, // Orange for pasta
+        { id: 7, name: "Fruits de Mer", color: "#87CEEB" }, // Sky blue for seafood
+        { id: 8, name: "Sandwich", color: "#8B4513" }, // Brown for sandwiches
+    ]);
+
+    // Static Products Data with Images
+    const staticProducts = [
+        // Plats (category_id: 1)
+        {
+            id: 4,
+            name: "Chicken Curry Sandwich",
+            description: "Spicy chicken curry sandwich",
+            price: 47.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=599",
+        },
+        {
+            id: 5,
+            name: "Club Sandwich",
+            description: "Triple-decker sandwich with bacon",
+            price: 45.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1540713434306-58505cf1b6fc?q=80&w=599",
+        },
+        {
+            id: 6,
+            name: "Double Cheeseburger",
+            description: "Double beef patty with cheese",
+            price: 32.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=599",
+        },
+        {
+            id: 7,
+            name: "Big Tasty",
+            description: "Our signature tasty burger",
+            price: 49.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=599",
+        },
+        {
+            id: 8,
+            name: "Big Chili",
+            description: "Spicy burger with chili sauce",
+            price: 49.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=599",
+        },
+        {
+            id: 9,
+            name: "McChicken",
+            description: "Classic chicken burger",
+            price: 36.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=599",
+        },
+        {
+            id: 10,
+            name: "Filet-O-Fish",
+            description: "Fish fillet with tartar sauce",
+            price: 33.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1511689660979-10d2b1aada49?q=80&w=599",
+        },
+        {
+            id: 11,
+            name: "Big Mac",
+            description: "The legendary double-decker",
+            price: 36.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?q=80&w=599",
+        },
+        
+        // Boissons (category_id: 2)
+        {
+            id: 2,
+            name: "Qiwi juice",
+            description: "Burger with fries and drink",
+            price: 29.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?q=80&w=500",
+        },
+        {
+            id: 16,
+            name: "Coca-Cola",
+            description: "Classic cola drink",
+            price: 15.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1554866585-cd94860890b7?q=80&w=599",
+        },
+        {
+            id: 17,
+            name: "Espresso",
+            description: "Strong Italian coffee",
+            price: 18.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=599",
+        },
+        {
+            id: 18,
+            name: "Water",
+            description: "Mineral water",
+            price: 8.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?q=80&w=599",
+        },
+        {
+            id: 19,
+            name: "Ice Tea",
+            description: "Refreshing iced tea",
+            price: 14.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?q=80&w=599",
+        },
+        {
+            id: 20,
+            name: "Fanta",
+            description: "Orange flavored soda",
+            price: 15.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?q=80&w=599",
+        },
+        {
+            id: 21,
+            name: "Green Tea",
+            description: "Traditional Japanese green tea",
+            price: 12.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?q=80&w=599",
+        },
+        {
+            id: 22,
+            name: "Milkshake Banana",
+            description: "Creamy banana milkshake topped with whipped cream",
+            price: 25.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 23,
+            name: "Chocolate Milkshake",
+            description: "Rich chocolate milkshake with chocolate syrup",
+            price: 25.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1577805947697-89e18249d767?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 24,
+            name: "Strawberry Milkshake",
+            description: "Fresh strawberry milkshake with whipped cream",
+            price: 25.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1579954115545-a95591f28bfc?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 25,
+            name: "Oreo Milkshake",
+            description: "Creamy vanilla milkshake with crushed Oreos",
+            price: 28.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 26,
+            name: "Cappuccino",
+            description: "Italian coffee with steamed milk foam",
+            price: 22.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1534778101976-62847782c213?q=80&w=599",
+        },
+        {
+            id: 27,
+            name: "Latte",
+            description: "Espresso with steamed milk",
+            price: 20.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?q=80&w=599",
+        },
+        {
+            id: 28,
+            name: "Orange Juice",
+            description: "Freshly squeezed orange juice",
+            price: 18.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=599",
+        },
+        {
+            id: 29,
+            name: "Sprite",
+            description: "Lemon-lime flavored soda",
+            price: 15.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?q=80&w=599",
+        },
+        {
+            id: 30,
+            name: "Smoothie",
+            description: "Mixed fruit smoothie",
+            price: 24.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1505252585461-04db1eb84625?q=80&w=599",
+        },
+        
+        // Pizzas (category_id: 3)
+        {
+            id: 31,
+            name: "Margherita Pizza",
+            description: "Classic pizza with tomato sauce, mozzarella, and basil",
+            price: 55.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=599",
+        },
+        {
+            id: 32,
+            name: "Pepperoni Pizza",
+            description: "Pizza topped with pepperoni slices",
+            price: 65.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=599",
+        },
+        {
+            id: 33,
+            name: "Vegetarian Pizza",
+            description: "Pizza with assorted vegetables",
+            price: 60.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=599",
+        },
+        {
+            id: 34,
+            name: "Hawaiian Pizza",
+            description: "Pizza with ham and pineapple",
+            price: 62.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=599",
+        },
+        {
+            id: 35,
+            name: "BBQ Chicken Pizza",
+            description: "Pizza with BBQ sauce and chicken",
+            price: 68.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=599",
+        },
+        {
+            id: 36,
+            name: "Meat Lovers Pizza",
+            description: "Pizza loaded with various meats",
+            price: 70.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=599",
+        },
+        {
+            id: 37,
+            name: "Four Cheese Pizza",
+            description: "Pizza with four different types of cheese",
+            price: 65.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1548369937-47519962c11a?q=80&w=599",
+        },
+        {
+            id: 38,
+            name: "Mushroom Pizza",
+            description: "Pizza with various mushrooms",
+            price: 63.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1595708684082-a173bb3a06c5?q=80&w=599",
+        },
+        {
+            id: 39,
+            name: "Seafood Pizza",
+            description: "Pizza with assorted seafood toppings",
+            price: 75.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=599",
+        },
+        {
+            id: 40,
+            name: "Spicy Pizza",
+            description: "Pizza with spicy peppers and jalapeños",
+            price: 64.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?q=80&w=599",
+        },
+        
+        // Desserts (category_id: 4)
+        {
+            id: 41,
+            name: "Chocolate Cake",
+            description: "Rich chocolate cake with ganache",
+            price: 35.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=599",
+        },
+        {
+            id: 42,
+            name: "Cheesecake",
+            description: "Creamy New York style cheesecake",
+            price: 38.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=599",
+        },
+        {
+            id: 43,
+            name: "Ice Cream",
+            description: "Assorted flavors of ice cream",
+            price: 25.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=599",
+        },
+        {
+            id: 44,
+            name: "Apple Pie",
+            description: "Traditional apple pie with cinnamon",
+            price: 32.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1535920527002-b35e96722eb9?q=80&w=599",
+        },
+        {
+            id: 45,
+            name: "Tiramisu",
+            description: "Italian coffee-flavored dessert",
+            price: 40.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?q=80&w=599",
+        },
+        {
+            id: 46,
+            name: "Brownie",
+            description: "Chocolate brownie with walnuts",
+            price: 28.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=599",
+        },
+        {
+            id: 47,
+            name: "Crème Brûlée",
+            description: "French custard with caramelized sugar top",
+            price: 42.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?q=80&w=599",
+        },
+        {
+            id: 48,
+            name: "Fruit Salad",
+            description: "Fresh seasonal fruits",
+            price: 30.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1564093497595-593b96d80180?q=80&w=599",
+        },
+        {
+            id: 49,
+            name: "Panna Cotta",
+            description: "Italian cream dessert with berry sauce",
+            price: 36.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=599",
+        },
+        {
+            id: 50,
+            name: "Chocolate Mousse",
+            description: "Light and airy chocolate dessert",
+            price: 34.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1511715282680-fbf93a50e721?q=80&w=599",
+        },
+        
+        // Salades (category_id: 5)
+        {
+            id: 51,
+            name: "Caesar Salad",
+            description: "Romaine lettuce with Caesar dressing and croutons",
+            price: 45.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?q=80&w=599",
+        },
+        {
+            id: 52,
+            name: "Greek Salad",
+            description: "Tomatoes, cucumbers, olives, and feta cheese",
+            price: 48.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=599",
+        },
+        {
+            id: 53,
+            name: "Caprese Salad",
+            description: "Tomatoes, mozzarella, and basil with balsamic glaze",
+            price: 50.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1595587870672-b51c2513a641?q=80&w=599",
+        },
+        {
+            id: 54,
+            name: "Chicken Salad",
+            description: "Mixed greens with grilled chicken",
+            price: 55.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=599",
+        },
+        {
+            id: 55,
+            name: "Tuna Salad",
+            description: "Mixed greens with tuna and boiled eggs",
+            price: 52.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=599",
+        },
+        {
+            id: 56,
+            name: "Waldorf Salad",
+            description: "Apples, celery, walnuts with mayonnaise",
+            price: 47.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1607532941433-304659e8198a?q=80&w=599",
+        },
+        {
+            id: 57,
+            name: "Cobb Salad",
+            description: "Lettuce, chicken, bacon, eggs, avocado, and blue cheese",
+            price: 58.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=599",
+        },
+        {
+            id: 58,
+            name: "Quinoa Salad",
+            description: "Quinoa with vegetables and herbs",
+            price: 49.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1556386470-bcdc6a5e9b9e?q=80&w=599",
+        },
+        {
+            id: 59,
+            name: "Pasta Salad",
+            description: "Pasta with vegetables and Italian dressing",
+            price: 46.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1473093226795-af9932fe5856?q=80&w=599",
+        },
+        {
+            id: 60,
+            name: "Seafood Salad",
+            description: "Mixed seafood with greens and lemon dressing",
+            price: 60.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=599",
+        },
+        
+        // Pâtes (category_id: 6)
+        {
+            id: 61,
+            name: "Spaghetti Bolognese",
+            description: "Spaghetti with meat sauce",
+            price: 58.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1551892374-ecf8754cf8b0?q=80&w=599",
+        },
+        {
+            id: 62,
+            name: "Fettuccine Alfredo",
+            description: "Fettuccine with creamy Alfredo sauce",
+            price: 56.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=599",
+        },
+        {
+            id: 63,
+            name: "Lasagna",
+            description: "Layered pasta with meat and cheese",
+            price: 62.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?q=80&w=599",
+        },
+        {
+            id: 64,
+            name: "Penne Arrabbiata",
+            description: "Penne with spicy tomato sauce",
+            price: 54.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1608219992759-8d74ed8d76eb?q=80&w=599",
+        },
+        {
+            id: 65,
+            name: "Carbonara",
+            description: "Spaghetti with eggs, cheese, and pancetta",
+            price: 59.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1612874742237-6526221588e3?q=80&w=599",
+        },
+        {
+            id: 66,
+            name: "Ravioli",
+            description: "Stuffed pasta with ricotta and spinach",
+            price: 60.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1611270629569-8b357cb88da9?q=80&w=599",
+        },
+        {
+            id: 67,
+            name: "Gnocchi",
+            description: "Potato dumplings with tomato sauce",
+            price: 57.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=599",
+        },
+        {
+            id: 68,
+            name: "Linguine with Clams",
+            description: "Linguine with clams in white wine sauce",
+            price: 65.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?q=80&w=599",
+        },
+        {
+            id: 69,
+            name: "Pesto Pasta",
+            description: "Pasta with basil pesto sauce",
+            price: 55.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1473093226795-af9932fe5856?q=80&w=599",
+        },
+        {
+            id: 70,
+            name: "Macaroni and Cheese",
+            description: "Macaroni with creamy cheese sauce",
+            price: 52.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?q=80&w=599",
+        },
+        
+        // Fruits de Mer (category_id: 7)
+        {
+            id: 71,
+            name: "Grilled Salmon",
+            description: "Salmon fillet with lemon butter sauce",
+            price: 75.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=599",
+        },
+        {
+            id: 72,
+            name: "Shrimp Scampi",
+            description: "Shrimp in garlic butter sauce",
+            price: 70.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=599",
+        },
+        {
+            id: 73,
+            name: "Fish and Chips",
+            description: "Battered fish with french fries",
+            price: 65.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1579208030886-b937da0925dc?q=80&w=599",
+        },
+        {
+            id: 74,
+            name: "Lobster Tail",
+            description: "Grilled lobster tail with butter",
+            price: 95.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?q=80&w=599",
+        },
+        {
+            id: 75,
+            name: "Calamari",
+            description: "Fried squid rings with marinara sauce",
+            price: 60.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=599",
+        },
+        {
+            id: 76,
+            name: "Crab Cakes",
+            description: "Pan-fried crab cakes with remoulade",
+            price: 68.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1625943553852-781c6dd46faa?q=80&w=599",
+        },
+        {
+            id: 77,
+            name: "Seafood Paella",
+            description: "Spanish rice dish with assorted seafood",
+            price: 80.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1515443961218-a51367888e4b?q=80&w=599",
+        },
+        {
+            id: 78,
+            name: "Tuna Steak",
+            description: "Seared tuna steak with sesame crust",
+            price: 72.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1501595091296-3aa970afb3ff?q=80&w=599",
+        },
+        {
+            id: 79,
+            name: "Mussels Mariniere",
+            description: "Mussels in white wine sauce",
+            price: 65.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1548943487-a2e4e43b4853?q=80&w=599",
+        },
+        {
+            id: 80,
+            name: "Seafood Soup",
+            description: "Rich soup with various seafood",
+            price: 62.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1614777986387-015c2a89b696?q=80&w=599",
+        },
+        
+        // Sandwich (category_id: 8)
+        {
+            id: 1,
+            name: "Bacon Burger",
+            description: "Smashed sweet potatoes",
+            price: 49.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=599",
+        },
+        {
+            id: 3,
+            name: "Cheese Burger",
+            description: "Classic cheeseburger with our special sauce",
+            price: 36.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1551782450-17144efb9c50?q=80&w=599",
+        },
+        {
+            id: 12,
+            name: "Triple Cheese",
+            description: "Triple the cheese, triple the taste",
+            price: 38.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1485451456034-3f9391c6f769?q=80&w=599",
+        },
+        {
+            id: 13,
+            name: "Veggie Burger",
+            description: "Plant-based patty with fresh vegetables",
+            price: 42.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1520072959219-c595dc870360?q=80&w=599",
+        },
+        {
+            id: 14,
+            name: "Mushroom Swiss Burger",
+            description: "Beef patty with sautéed mushrooms and Swiss cheese",
+            price: 45.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?q=80&w=599",
+        },
+        {
+            id: 15,
+            name: "BBQ Bacon Burger",
+            description: "Beef patty with BBQ sauce and crispy bacon",
+            price: 47.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?q=80&w=599",
+        },
+        {
+            id: 81,
+            name: "Club Sandwich",
+            description: "Triple-decker sandwich with chicken, bacon, lettuce, and tomato",
+            price: 45.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1567234669003-dce7a7a88821?q=80&w=1000",
+        },
+        {
+            id: 82,
+            name: "Grilled Cheese",
+            description: "Classic grilled cheese with multiple cheese blend",
+            price: 35.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=1000",
+        },
+        {
+            id: 83,
+            name: "Chicken Sandwich",
+            description: "Grilled chicken breast with lettuce and special sauce",
+            price: 42.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?q=80&w=1000",
+        },
+        {
+            id: 84,
+            name: "Veggie Delight",
+            description: "Fresh vegetables with hummus and avocado",
+            price: 38.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1540914124281-342587941389?q=80&w=1000",
+        },
+        {
+            id: 85,
+            name: "BLT Supreme",
+            description: "Bacon, lettuce, and tomato with mayo on toasted bread",
+            price: 40.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1619096252214-ef06c45683e3?q=80&w=1000",
+        },
+        {
+            id: 86,
+            name: "Tuna Melt",
+            description: "Tuna salad with melted cheese on grilled bread",
+            price: 43.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?q=80&w=1000",
+        },
+        {
+            id: 87,
+            name: "Mediterranean Sandwich",
+            description: "Grilled vegetables, feta, and olive tapenade",
+            price: 41.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1539252554453-80ab65ce3586?q=80&w=1000",
+        },
+        {
+            id: 88,
+            name: "Steak Sandwich",
+            description: "Grilled steak with caramelized onions and cheese",
+            price: 52.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1511344407683-b1172dce025f?q=80&w=1000",
+        },
+        {
+            id: 89,
+            name: "Egg & Avocado",
+            description: "Fried egg with mashed avocado and microgreens",
+            price: 39.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=1000",
+        },
+        {
+            id: 90,
+            name: "Pulled Pork Sandwich",
+            description: "BBQ pulled pork with coleslaw",
+            price: 46.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1513185158878-8d8c2a2a3da3?q=80&w=1000",
+        },
+    ];
+
+    // Generate menuData from categories and products
+    const menuData = categories.map(category => {
+        const categoryProducts = staticProducts.filter(product => product.category_id === category.id);
+        return {
+            id: category.id,
+            name: category.name,
+            products: categoryProducts.map(product => ({
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                image: product.image
+            }))
+        };
+    });
+
     const [activeCategory, setActiveCategory] = useState(null);
     const [cart, setCart] = useState([]);
     const [orderType, setOrderType] = useState('eat_in');
@@ -1549,32 +2170,6 @@ const PosIndex = ({ auth }) => {
                         {/* Cash Register (Caisse) View */}
                         {activeTab === 'caisse' && (
                             <>
-                                {/* Categories Menu - Replaces Service Type Pills */}
-                                <div className="bg-white p-3 mb-2 border-b overflow-x-auto">
-                                    <div className="flex items-center space-x-4 px-2">
-                                        {menuData.map(category => (
-                                            <button
-                                                key={category.id}
-                                                onClick={() => setActiveCategory(category.id)}
-                                                className={`px-4 py-2 rounded-full flex items-center whitespace-nowrap ${
-                                                    activeCategory === category.id ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                }`}
-                                            >
-                                                <span className="mr-2">{
-                                                    category.id === 1 ? '🍽️' : 
-                                                    category.id === 2 ? '🥗' : 
-                                                    category.id === 3 ? '🍰' : 
-                                                    category.id === 4 ? '🥤' : 
-                                                    category.id === 5 ? '🍷' : 
-                                                    category.id === 6 ? '🍿' : 
-                                                    category.id === 7 ? '🥖' : '☕'
-                                                }</span>
-                                                {category.name}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                
                                 {/* Products Section */}
                                 <div className="flex-1 overflow-auto">
                                     <ProductSection 
@@ -1583,6 +2178,7 @@ const PosIndex = ({ auth }) => {
                                             setShowCustomizeModal(true);
                                         }}
                                         activeCategory={activeCategory} 
+                                        menuData={menuData}
                                     />
                                 </div>
                             </>
