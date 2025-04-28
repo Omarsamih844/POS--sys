@@ -90,13 +90,13 @@ const categoryIcons = {
 // Add image URLs for each category
 const categoryImages = {
     1: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80", // Plats (main dish)
-    2: "https://images.unsplash.com/photo-1510626176961-4b57d4fbad04?auto=format&fit=crop&w=400&q=80", // Boissons (drinks)
-    3: "https://images.unsplash.com/photo-1548365328-8b849e6c7b8b?auto=format&fit=crop&w=400&q=80", // Pizzas
-    4: "https://images.unsplash.com/photo-1505250469679-203ad9ced0cb?auto=format&fit=crop&w=400&q=80", // Desserts (cake/pastry)
-    5: "https://images.unsplash.com/photo-1464306076886-debca5e8a6b0?auto=format&fit=crop&w=400&q=80", // Salades (salad)
-    6: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80", // Pâtes (pasta)
-    7: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=400&q=80", // Fruits de Mer (seafood)
-    8: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80", // Sandwich
+    2: "/storage/categ_images/boisson_image.png", // Boissons (drinks)
+    3: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80", // Pizzas
+    4: "/storage/categ_images/cake.png", // Desserts (cake/pastry)
+    5: "/storage/categ_images/salad.png", // Salades (salad)
+    6: "/storage/categ_images/pasta.png", // Pâtes (pasta)
+    7: "/storage/categ_images/seafood.png", // Fruits de Mer (seafood)
+    8: "https://images.unsplash.com/photo-1540713434306-58505cf1b6fc?auto=format&fit=crop&w=400&q=80", // Sandwich
 };
 
 // CategoryCards Component
@@ -1056,6 +1056,18 @@ const PosIndex = ({ auth }) => {
     const [showDeleteQtyModal, setShowDeleteQtyModal] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null); // { product_id, quantity }
     const [deleteQty, setDeleteQty] = useState(1);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     useEffect(() => {
         calculateTotals();
@@ -1847,73 +1859,73 @@ const PosIndex = ({ auth }) => {
                                     <div className="grid grid-cols-3 gap-2">
                                         <button 
                                             onClick={() => handleKeypadInput(1)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             1
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(2)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             2
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(3)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             3
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(4)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             4
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(5)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             5
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(6)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             6
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(7)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             7
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(8)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             8
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(9)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             9
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(0)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
                                         >
                                             0
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput('CE')}
-                                            className="flex items-center justify-center text-lg font-medium bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors h-8 shadow"
                                         >
                                             CE
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput('⌫')}
-                                            className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-8 shadow"
                                         >
                                             ⌫
                                         </button>
@@ -1927,7 +1939,7 @@ const PosIndex = ({ auth }) => {
                                                 updateQuantity(selectedProduct.id, currentQty + 1);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors h-14 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors h-8 shadow"
                                     >
                                         +
                                     </button>
@@ -1940,7 +1952,7 @@ const PosIndex = ({ auth }) => {
                                                 }
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded transition-colors h-14 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded transition-colors h-8 shadow"
                                     >
                                         -
                                     </button>
@@ -1951,7 +1963,7 @@ const PosIndex = ({ auth }) => {
                                                 setSelectedProduct(null);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-14 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-8 shadow"
                                     >
                                         C
                                     </button>
@@ -1970,7 +1982,7 @@ const PosIndex = ({ auth }) => {
                             <button
                                 onClick={() => setShowPaymentModal(true)}
                                 disabled={!activeOrderId || cart.length === 0}
-                                className={`w-full p-3 rounded-md transition-colors text-base font-medium h-14 flex items-center justify-center ${
+                                className={`w-full p-3 rounded-md transition-colors text-base font-medium h-8 flex items-center justify-center ${
                                     !activeOrderId || cart.length === 0
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
@@ -1987,19 +1999,37 @@ const PosIndex = ({ auth }) => {
                         {/* Top Navigation Tabs */}
                         <div className="bg-white shadow-md mb-2">
                             <div className="max-w-7xl mx-auto p-2">
-                                <div className="flex flex-wrap items-center">
-                                    <button 
-                                        onClick={() => setActiveTab('tables')} 
-                                        className={`px-4 py-2 mr-2 rounded-md ${activeTab === 'tables' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                <div className="flex items-center justify-between">
+                                    {/* Left: Tab Buttons */}
+                                    <div className="flex items-center">
+                                        <button 
+                                            onClick={() => setActiveTab('tables')} 
+                                            className={`px-4 py-2 mr-2 rounded-md ${activeTab === 'tables' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                        >
+                                            Tables
+                                        </button>
+                                        <button 
+                                            onClick={() => setActiveTab('caisse')} 
+                                            className={`px-4 py-2 rounded-md ${activeTab === 'caisse' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                                        >
+                                            Caisse
+                                        </button>
+                                    </div>
+                                    {/* Right: Connection Status Indicator */}
+                                    <div className={`flex items-center px-3 py-1 ml-4 rounded-full font-semibold text-sm shadow-md select-none ${isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+                                        style={{ pointerEvents: 'none' }}
                                     >
-                                        Tables
-                                    </button>
-                                    <button 
-                                        onClick={() => setActiveTab('caisse')} 
-                                        className={`px-4 py-2 rounded-md ${activeTab === 'caisse' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-                                    >
-                                        Caisse
-                                    </button>
+                                        {isOnline ? (
+                                            <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.53 16.11a6 6 0 016.95 0M5.07 12.66a10 10 0 0113.86 0M1.64 9.21a14 14 0 0120.72 0M12 20h.01" />
+                                            </svg>
+                                        ) : (
+                                            <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636A9 9 0 005.636 18.364M1 1l22 22M8.53 16.11a6 6 0 016.95 0" />
+                                            </svg>
+                                        )}
+                                        {isOnline ? 'Connecté' : 'Hors ligne'}
+                                    </div>
                                 </div>
                             </div>
                         </div>
