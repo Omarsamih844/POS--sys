@@ -755,8 +755,8 @@ const PosIndex = ({ auth }) => {
             setSelectedProduct(null);
             setShowPaymentModal(false);
             
-            // Show success message
-            showAlert('Paiement réussi!', 'Succès');
+            // Remove success message
+            // showAlert('Paiement réussi!', 'Succès');
 
         } catch (error) {
             console.error('Error processing payment:', error);
@@ -1248,23 +1248,23 @@ const PosIndex = ({ auth }) => {
                     <div className="p-2 bg-white border-b">
                         <div className="flex gap-2">
                             {activeOrderId && orderFromBar ? (
-                                <button
-                                    onClick={() => setShowPaymentModal(true)}
-                                    disabled={!activeOrderId || cart.length === 0}
+                        <button
+                            onClick={() => setShowPaymentModal(true)}
+                            disabled={!activeOrderId || cart.length === 0}
                                     className={`flex-1 p-3 rounded-md transition-colors text-base font-medium h-14 flex items-center justify-center shadow-md ${
-                                        !activeOrderId || cart.length === 0
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                !activeOrderId || cart.length === 0
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             : 'bg-blue-600 text-white hover:bg-blue-700'
-                                    }`}
-                                >
+                            }`}
+                        >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    Payer ({total.toFixed(2)} MAD)
-                                </button>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Payer ({total.toFixed(2)} MAD)
+                        </button>
                             ) : null}
-                        </div>
                     </div>
+                </div>
 
                     {/* Validate Button */}
                     {!activeOrderId || !orderFromBar ? (
@@ -1309,7 +1309,6 @@ const PosIndex = ({ auth }) => {
                                     setOrderType('takeout');
                                     setActiveOrderId(null);
                                     setActivePromotion(null);
-                                    showAlert('Commande envoyée à la cuisine', 'Succès');
                                 }}
                                 className="w-full p-3 bg-green-600 text-white rounded-md hover:bg-green-700 text-base font-medium h-14 flex items-center justify-center shadow-md"
                             >

@@ -9,7 +9,7 @@ const Receipt = () => {
             
             // Create a new PDF with 7cm width (approximately 198.45 points)
             const width = 198.45; // 7cm in points
-            const height = 800; // Increased height to prevent overflow
+            const height = 250.45; // Increased height to prevent overflow
             
             const doc = new jsPDF({
                 orientation: 'portrait',
