@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('taxes', function (Blueprint $table) {
             $table->id('id_taxe');
-            $table->string('libelle_taxe')->unique();
-            $table->float('valeur_taxe')->default(0);
+            $table->string('libelle_taxe', 100)->unique();
+            $table->decimal('valeur_taxe', 12, 2)->default(0.00);
             $table->timestamps();
         });
     }

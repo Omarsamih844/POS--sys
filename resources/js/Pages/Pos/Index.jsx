@@ -87,6 +87,18 @@ const categoryIcons = {
     8: "🥪", // Sandwich
 };
 
+// Add image URLs for each category
+const categoryImages = {
+    1: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80", // Plats (main dish)
+    2: "https://images.unsplash.com/photo-1510626176961-4b57d4fbad04?auto=format&fit=crop&w=400&q=80", // Boissons (drinks)
+    3: "https://images.unsplash.com/photo-1548365328-8b849e6c7b8b?auto=format&fit=crop&w=400&q=80", // Pizzas
+    4: "https://images.unsplash.com/photo-1505250469679-203ad9ced0cb?auto=format&fit=crop&w=400&q=80", // Desserts (cake/pastry)
+    5: "https://images.unsplash.com/photo-1464306076886-debca5e8a6b0?auto=format&fit=crop&w=400&q=80", // Salades (salad)
+    6: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80", // Pâtes (pasta)
+    7: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=400&q=80", // Fruits de Mer (seafood)
+    8: "https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=400&q=80", // Sandwich
+};
+
 // CategoryCards Component
 const CategoryCards = ({ onCategorySelect, menuData }) => {
     // Category color mapping
@@ -119,13 +131,23 @@ const CategoryCards = ({ onCategorySelect, menuData }) => {
                 <div
                     key={category.id}
                     onClick={() => onCategorySelect(category.id)}
-                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-32"
+                    className="relative rounded-lg shadow-md overflow-hidden cursor-pointer group h-32 flex flex-col justify-end bg-gray-100 transition-transform duration-300 transform hover:scale-105"
                     style={{ backgroundColor: categoryColors[category.id] + '30' }}
                 >
-                    <div className="p-4 flex flex-col items-center justify-center h-full">
-                        <div className="text-4xl mb-2">{categoryIcons[category.id]}</div>
-                        <h3 className="font-semibold text-sm text-gray-800 text-center">{category.name}</h3>
-                        <p className="text-xs text-gray-600 mt-1">{category.products.length} articles</p>
+                    <img
+                        src={categoryImages[category.id]}
+                        alt={category.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 z-0"
+                        onError={e => { e.target.src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80'; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent z-10 transition-all duration-300 group-hover:from-black/80 group-hover:via-black/50" />
+                    <div className="relative z-20 flex flex-col items-center justify-end h-full w-full pb-2 px-2">
+                        <h3 className="text-white text-base font-extrabold drop-shadow-lg text-center mb-1 truncate w-full tracking-wide">
+                            {category.name}
+                        </h3>
+                        <span className="inline-block bg-white/80 text-gray-900 text-xs font-semibold rounded-full px-3 py-0.5 mb-1 shadow">
+                            {category.products.length} articles
+                        </span>
                     </div>
                 </div>
             ))}
@@ -1031,6 +1053,9 @@ const PosIndex = ({ auth }) => {
         { id: '12', status: 'available' }
     ]);
     const [activeFloor, setActiveFloor] = useState('Main Floor');
+    const [showDeleteQtyModal, setShowDeleteQtyModal] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null); // { product_id, quantity }
+    const [deleteQty, setDeleteQty] = useState(1);
 
     useEffect(() => {
         calculateTotals();
@@ -1099,26 +1124,33 @@ const PosIndex = ({ auth }) => {
         setTotal(newTotal);
     };
 
-    const addToCart = (productId) => {
-        // Check if there's an active order first
+    const addToCart = (productId, customizations = null) => {
         if (!activeOrderId) {
             showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
             return;
         }
-        
-        // Find the product in any category
+
         const allProducts = menuData.flatMap(cat => cat.products);
         const product = allProducts.find(p => p.id === productId);
-        
         if (!product) return;
-        
-        const existingItem = cart.find(item => item.product_id === productId);
-        
+
+        // Serialize customizations for comparison
+        const customizationKey = customizations ? JSON.stringify(customizations.options) : null;
+
+        // Find if an item with the same product and same customization exists
+        const existingItem = cart.find(item =>
+            item.product_id === productId &&
+            JSON.stringify(item.customizations?.options || {}) === (customizationKey || '{}')
+        );
+
         if (existingItem) {
             const updatedCart = cart.map(item => {
-                if (item.product_id === productId) {
-                    return { 
-                        ...item, 
+                if (
+                    item.product_id === productId &&
+                    JSON.stringify(item.customizations?.options || {}) === (customizationKey || '{}')
+                ) {
+                    return {
+                        ...item,
                         quantity: item.quantity + 1,
                         unit_price: item.unit_price || item.price || product.price,
                         total: product.price * (item.quantity + 1)
@@ -1133,15 +1165,14 @@ const PosIndex = ({ auth }) => {
                 {
                     product_id: productId,
                     price: product.price,
-                    unit_price: product.price, // Make sure unit_price is set
+                    unit_price: product.price,
                     quantity: 1,
                     total: product.price,
-                    name: product.name
+                    name: product.name,
+                    customizations: customizations // Store customizations on the cart item
                 }
             ]);
         }
-        
-        // The calculateTotals will be called via useEffect when cart changes
     };
 
     const removeFromCart = (productId) => {
@@ -1393,7 +1424,6 @@ const PosIndex = ({ auth }) => {
     };
 
     const handleCustomize = (product, customizations) => {
-        // Check if there's an active order before proceeding
         if (!activeOrderId) {
             showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
             setShowCustomizeModal(false);
@@ -1401,18 +1431,8 @@ const PosIndex = ({ auth }) => {
         }
 
         if (product) {
-            // Store customizations if any
-            if (customizations) {
-                setCustomizations({
-                    ...customizations,
-                    [product.id]: customizations
-                });
-            }
-            
-            // Add product to cart
-            addToCart(product.id);
+            addToCart(product.id, customizations); // Pass customizations here
         }
-        
         setShowCustomizeModal(false);
     };
 
@@ -1655,102 +1675,44 @@ const PosIndex = ({ auth }) => {
                     {/* Left Side - Cart - Increase width for wider keypad */}
                     <div className="w-1/3 md:w-2/5 lg:w-2/5 xl:w-1/3 bg-white flex flex-col shadow-lg">
                        
-                        {/* Cart Header - more compact with active orders */}
-                        <div className="p-3 bg-blue-900 text-white">
+                        {/* Cart Header - modern blue gradient design */}
+                        <div className="bg-gradient-to-r from-blue-400 to-blue-700 text-white p-2 shadow-lg rounded-b-xl">
                             <div className="flex justify-between items-center">
-                                <h2 className="text-lg font-semibold">Panier</h2>
+                                <div className="flex items-center space-x-2">
+                                    <div className="p-1 bg-white/20 backdrop-blur-sm rounded-lg shadow">
+                                        <ShoppingCartIcon className="h-4 w-4 text-blue-200" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-bold tracking-tight">Panier</h2>
+                                        <p className="text-blue-100 text-xs font-medium opacity-80">Commande en cours</p>
+                                    </div>
+                                </div>
                                 <div className="flex gap-1">
                                     <button
                                         onClick={handleNewOrder}
-                                        className="px-2 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 text-sm font-medium min-w-[90px] h-10 flex items-center justify-center shadow-md"
+                                        className="px-2 py-1 bg-white text-blue-700 rounded-full font-normal shadow hover:bg-blue-100 hover:scale-105 transition-all flex items-center gap-1 border border-blue-200 text-xs"
                                     >
-                                        <PlusIcon className="h-4 w-4 mr-1" />
+                                        <PlusIcon className="h-4 w-4" />
                                         Nouvelle
                                     </button>
-                                    <div className="relative group">
-                                        <button
-                                            className="px-2 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800 text-sm font-medium min-w-[90px] h-10 flex items-center justify-center shadow-md"
-                                        >
-                                            <ClipboardDocumentIcon className="h-4 w-4 mr-1" />
-                                            Commandes <span className="ml-1 bg-white text-blue-900 rounded-full h-5 w-5 flex items-center justify-center text-xs">{activeOrders.filter(o => o.status === 'pending').length}</span>
-                                        </button>
-                                        
-                                        {/* Active Orders Dropdown */}
-                                        <div className="absolute right-0 mt-1 bg-white rounded-md shadow-lg overflow-hidden z-10 w-64 hidden group-hover:block">
-                                            <div className="py-1 max-h-80 overflow-y-auto">
-                                                {activeOrders.filter(o => o.status === 'pending').length === 0 ? (
-                                                    <div className="px-4 py-3 text-sm text-gray-500">Aucune commande active</div>
-                                                ) : (
-                                                    activeOrders.filter(o => o.status === 'pending').map(order => (
-                                                        <div 
-                                                            key={order.id} 
-                                                            className={`px-4 py-3 text-sm hover:bg-gray-100 cursor-pointer ${activeOrderId === order.id ? 'bg-blue-50' : ''}`}
-                                                            onClick={() => switchToOrder(order.id)}
-                                                        >
-                                                            <div className="flex justify-between items-center">
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-medium">
-                                                                        {order.type === 'eat_in' ? 'Sur Place' : order.type === 'takeout' ? 'À Emporter' : 'Livraison'}
-                                                                        {order.table_number && ` - Table ${order.table_number}`}
-                                                                    </span>
-                                                                    <span className="text-xs text-gray-500">{order.timestamp}</span>
-                                                                </div>
-                                                                <span className="font-medium">{order.total.toFixed(2)} MAD</span>
-                                                            </div>
-                                                        </div>
-                                                    ))
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* History Button */}
                                     <button
-                                        onClick={() => setShowOrderHistory(!showOrderHistory)}
-                                        className={`px-2 py-2 rounded-md text-sm font-medium min-w-[90px] h-10 flex items-center justify-center shadow-md ${
-                                            showOrderHistory ? 'bg-indigo-700 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                        }`}
+                                        onClick={() => setShowOrderHistory(true)}
+                                        className="px-2 py-1 bg-white text-blue-500 rounded-full font-normal shadow hover:bg-blue-50 hover:scale-105 transition-all flex items-center gap-1 border border-blue-100 text-xs"
                                     >
-                                        <ClockIcon className="h-4 w-4 mr-1" />
+                                        <ClockIcon className="h-4 w-4" />
                                         Historique
                                     </button>
                                 </div>
                             </div>
-                            
-                            {/* Active Order ID with larger cancel button */}
-                            {activeOrderId && (
-                                <div className="mt-2 flex justify-between items-center">
-                                    <div className="bg-blue-700 text-white px-2 py-1 rounded text-sm flex items-center">
-                                        <ClipboardDocumentIcon className="h-4 w-4 mr-1" />
-                                        Commande active
-                                    </div>
-                                    <div>
-                                    <span className="text-sm">
-                                        {tableNumber ? `Table #${tableNumber}` : 'Aucune table'}
-                                    </span>
-                                    </div>
-                                    <button 
-                                        onClick={() => cancelOrder(activeOrderId)}
-                                        className="bg-red-600 text-white px-3 py-1 rounded text-sm flex items-center hover:bg-red-700 shadow-md"
-                                    >
-                                        <XMarkIcon className="h-4 w-4 mr-1" />
-                                        Annuler
-                                    </button>
-                                </div>
-                            )}
-                            
-                            <div className="flex gap-2 mt-2 text-sm">
-                                <div className="flex items-center gap-1">
+                            {/* Status Indicators */}
+                            <div className="flex gap-2 mt-1">
+                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-700 font-semibold text-xs">
                                     <span>Art.:</span>
-                                    <span className="bg-white text-blue-900 px-2 py-1 rounded-full font-medium">
-                                        {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                                    </span>
+                                    <span className="text-base">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                                 </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-900 font-semibold text-xs">
                                     <span>Total:</span>
-                                    <span className="bg-white text-blue-900 px-2 py-1 rounded-full font-medium">
-                                        {total.toFixed(2)} MAD
-                                    </span>
+                                    <span className="text-base">{total.toFixed(2)} MAD</span>
                                 </div>
                             </div>
                         </div>
@@ -1801,24 +1763,41 @@ const PosIndex = ({ auth }) => {
                                                             const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
                                                             if (product) {
                                                                 setSelectedProduct(product);
-                                                                setStartNewInput(true);
+                                                                setShowCustomizeModal(true); // Open update modal
                                                             }
                                                         }}
-                                                        className="p-1 rounded hover:bg-gray-100"
+                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
+                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
                                                     >
-                                                        <PencilIcon className="h-3 w-3 text-blue-500" />
+                                                        <PencilIcon className="h-5 w-5 text-blue-500" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            removeFromCart(item.product_id);
-                                                            if (selectedProduct?.id === item.product_id) {
-                                                                setSelectedProduct(null);
+                                                            if (item.quantity > 1) {
+                                                                setDeleteTarget({ product_id: item.product_id, quantity: item.quantity });
+                                                                setDeleteQty(1);
+                                                                setShowDeleteQtyModal(true);
+                                                            } else {
+                                                                showConfirm(
+                                                                    "Êtes-vous sûr de vouloir supprimer ce produit du panier ?",
+                                                                    (confirmed) => {
+                                                                        if (confirmed) {
+                                                                            removeFromCart(item.product_id);
+                                                                            if (selectedProduct?.id === item.product_id) {
+                                                                                setSelectedProduct(null);
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "Confirmation"
+                                                                );
                                                             }
                                                         }}
-                                                        className="p-1 rounded hover:bg-gray-100"
+                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
+                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
+                                                        title="Supprimer"
                                                     >
-                                                        <TrashIcon className="h-3 w-3 text-red-500" />
+                                                        <TrashIcon className="h-5 w-5 text-red-500" />
                                                     </button>
                                                 </div>
                                             </div>
@@ -2591,6 +2570,48 @@ const PosIndex = ({ auth }) => {
                                 className={`px-4 py-2 rounded text-white ${isConfirm ? 'bg-blue-600 hover:bg-blue-700' : 'bg-green-600 hover:bg-green-700'}`}
                             >
                                 {isConfirm ? 'Confirmer' : 'OK'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showDeleteQtyModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-xs">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Supprimer du panier</h3>
+                        <p className="mb-4 text-gray-700">Combien d'articles voulez-vous supprimer ?</p>
+                        <input
+                            type="number"
+                            min={1}
+                            max={deleteTarget?.quantity || 1}
+                            value={deleteQty}
+                            onChange={e => setDeleteQty(Math.max(1, Math.min(deleteTarget?.quantity || 1, Number(e.target.value))))}
+                            className="w-full p-2 border rounded mb-4 text-center"
+                        />
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setShowDeleteQtyModal(false)}
+                                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (deleteTarget) {
+                                        if (deleteQty >= deleteTarget.quantity) {
+                                            removeFromCart(deleteTarget.product_id);
+                                            if (selectedProduct?.id === deleteTarget.product_id) {
+                                                setSelectedProduct(null);
+                                            }
+                                        } else {
+                                            updateQuantity(deleteTarget.product_id, deleteTarget.quantity - deleteQty);
+                                        }
+                                    }
+                                    setShowDeleteQtyModal(false);
+                                }}
+                                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                                Supprimer
                             </button>
                         </div>
                     </div>
