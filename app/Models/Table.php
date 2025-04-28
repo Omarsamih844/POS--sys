@@ -9,25 +9,22 @@ class Table extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    protected $fillable = [
-        'number',
-        'capacity',
-        'status',
-        'location'
-    ];
+    // Specify the name of the table
+    protected $table = 'tables';
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'capacity' => 'integer',
+    // Define the primary key
+    protected $primaryKey = 'id_table';
+
+    // Indicate if the primary key is auto-incrementing
+    public $incrementing = true;
+
+    // Specify the attributes that are mass assignable (fillable)
+    protected $fillable = [
+        'numero_table',
+        'coordonnee_x',
+        'coordonnee_y',
+        'id_statut_table',
+        'id_etage'
     ];
 
     public function etage()

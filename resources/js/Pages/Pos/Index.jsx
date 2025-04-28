@@ -7,6 +7,7 @@ import Receipt from './Receipt';
 import PromotionModal from './PromotionModal';
 import CustomizeModal from './CustomizeModal';
 import PaymentModal from './PaymentModal';
+import TableOccupancyModal from './TableOccupancyModal';
 import { 
     DocumentTextIcon, 
     ShoppingCartIcon, 
@@ -22,6 +23,7 @@ import {
     XMarkIcon
 } from '@heroicons/react/24/solid';
 
+<<<<<<< HEAD
 // Menu Data Structure
 const menuData = [
         {
@@ -169,9 +171,12 @@ const menuData = [
     ]
   }
 ];
+=======
+// Note: menuData is now defined in the PosIndex component to avoid ReferenceError
+>>>>>>> d79a3b6e97f5872204d126a5db3674431e4ff0c9
 
 // ProductGrid Component
-const ProductGrid = ({ categoryId, onProductSelect }) => {
+const ProductGrid = ({ categoryId, onProductSelect, menuData }) => {
     // Find the selected category and its products
     const category = menuData.find(cat => cat.id === categoryId);
     const products = category ? category.products : [];
@@ -222,23 +227,23 @@ const ProductGrid = ({ categoryId, onProductSelect }) => {
 
 // Category icons mapping
 const categoryIcons = {
-    1: "🍽️", // Plats Principaux
-    2: "🥗", // Entrées
-    3: "🍰", // Desserts
-    4: "🥤", // Boissons Non-Alcoolisées
-    5: "🍷", // Boissons Alcoolisées
-    6: "🍿", // Snacks
-    7: "🥖", // Produits de Boulangerie
-    8: "☕", // Boissons Chaudes
+    1: "🍱", // Plats
+    2: "🥤", // Boissons
+    3: "🍕", // Pizzas
+    4: "🍰", // Desserts
+    5: "🥗", // Salades
+    6: "🍝", // Pâtes
+    7: "🦞", // Fruits de Mer
+    8: "🥪", // Sandwich
 };
 
 // CategoryCards Component
-const CategoryCards = ({ onCategorySelect }) => {
+const CategoryCards = ({ onCategorySelect, menuData }) => {
     // Category color mapping
     const categoryColors = {
         1: "#FF9AA2", // Plats Principaux - Soft red
         2: "#FFB7B2", // Entrées - Soft salmon
-        3: "#FFDAC1", // Desserts - Soft peach
+        3: "FFDAC1", // Desserts - Soft peach
         4: "#E2F0CB", // Boissons Non-Alcoolisées - Soft green
         5: "#B5EAD7", // Boissons Alcoolisées - Soft mint
         6: "#C7CEEA", // Snacks - Soft blue
@@ -248,27 +253,27 @@ const CategoryCards = ({ onCategorySelect }) => {
 
     // Category icon mapping
     const categoryIcons = {
-        1: "🍽️", // Plats Principaux
-        2: "🥗", // Entrées
-        3: "🍰", // Desserts
-        4: "🥤", // Boissons Non-Alcoolisées
-        5: "🍷", // Boissons Alcoolisées
-        6: "🍿", // Snacks
-        7: "🥖", // Produits de Boulangerie
-        8: "☕", // Boissons Chaudes
+        1: "🍱", // Plats
+        2: "🥤", // Boissons
+        3: "🍕", // Pizzas
+        4: "🍰", // Desserts
+        5: "🥗", // Salades
+        6: "🍝", // Pâtes
+        7: "🦞", // Fruits de Mer
+        8: "🥪", // Sandwich
     };
 
     return (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 p-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
             {menuData.map(category => (
                 <div
                     key={category.id}
                     onClick={() => onCategorySelect(category.id)}
-                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-28 sm:h-32"
+                    className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer overflow-hidden transform hover:-translate-y-1 h-32"
                     style={{ backgroundColor: categoryColors[category.id] + '30' }}
                 >
-                    <div className="p-3 flex flex-col items-center justify-center h-full">
-                        <div className="text-3xl mb-1">{categoryIcons[category.id]}</div>
+                    <div className="p-4 flex flex-col items-center justify-center h-full">
+                        <div className="text-4xl mb-2">{categoryIcons[category.id]}</div>
                         <h3 className="font-semibold text-sm text-gray-800 text-center">{category.name}</h3>
                         <p className="text-xs text-gray-600 mt-1">{category.products.length} articles</p>
                     </div>
@@ -279,7 +284,7 @@ const CategoryCards = ({ onCategorySelect }) => {
 };
 
 // ProductSection Component
-const ProductSection = ({ onProductSelect, activeCategory }) => {
+const ProductSection = ({ onProductSelect, activeCategory, menuData }) => {
     const [selectedCategory, setSelectedCategory] = useState(null);
 
     // Update selectedCategory when activeCategory changes (from filter buttons)
@@ -302,14 +307,14 @@ const ProductSection = ({ onProductSelect, activeCategory }) => {
     // Get the category icon for the selected category
     const getCategoryIcon = (categoryId) => {
         const icons = {
-            1: "🍽️",
-            2: "🥗",
-            3: "🍰",
-            4: "🥤",
-            5: "🍷",
-            6: "🍿", 
-            7: "🥖",
-            8: "☕"
+            1: "🍱", // Plats
+            2: "🥤", // Boissons
+            3: "🍕", // Pizzas
+            4: "🍰", // Desserts
+            5: "🥗", // Salades
+            6: "🍝", // Pâtes
+            7: "🦞", // Fruits de Mer
+            8: "🥪", // Sandwich
         };
         return icons[categoryId] || "📋";
     };
@@ -343,17 +348,784 @@ const ProductSection = ({ onProductSelect, activeCategory }) => {
                     <ProductGrid
                         categoryId={selectedCategory}
                         onProductSelect={onProductSelect}
+                        menuData={menuData}
                     />
                 </>
             ) : (
-                <CategoryCards onCategorySelect={handleCategorySelect} />
+                <CategoryCards onCategorySelect={handleCategorySelect} menuData={menuData} />
             )}
         </div>
     );
 };
 
 const PosIndex = ({ auth }) => {
-    // Static Categories Data - Replaced by the CategoryCards component
+    // Static Categories Data
+    const [categories] = useState([
+        { id: 1, name: "Plats", color: "#4F46E5" }, // Indigo for main dishes
+        { id: 2, name: "Boissons", color: "#10B981" }, // Emerald for drinks
+        { id: 3, name: "Pizzas", color: "#F59E0B" }, // Amber for pizzas
+        { id: 4, name: "Desserts", color: "#EC4899" }, // Pink for desserts
+        { id: 5, name: "Salades", color: "#34D399" }, // Emerald for salads
+        { id: 6, name: "Pâtes", color: "#F97316" }, // Orange for pasta
+        { id: 7, name: "Fruits de Mer", color: "#87CEEB" }, // Sky blue for seafood
+        { id: 8, name: "Sandwich", color: "#8B4513" }, // Brown for sandwiches
+    ]);
+
+    // Static Products Data with Images
+    const staticProducts = [
+        // Plats (category_id: 1)
+        {
+            id: 4,
+            name: "Chicken Curry Sandwich",
+            description: "Spicy chicken curry sandwich",
+            price: 47.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=599",
+        },
+        {
+            id: 5,
+            name: "Club Sandwich",
+            description: "Triple-decker sandwich with bacon",
+            price: 45.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1540713434306-58505cf1b6fc?q=80&w=599",
+        },
+        {
+            id: 6,
+            name: "Double Cheeseburger",
+            description: "Double beef patty with cheese",
+            price: 32.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=599",
+        },
+        {
+            id: 7,
+            name: "Big Tasty",
+            description: "Our signature tasty burger",
+            price: 49.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=599",
+        },
+        {
+            id: 8,
+            name: "Big Chili",
+            description: "Spicy burger with chili sauce",
+            price: 49.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=599",
+        },
+        {
+            id: 9,
+            name: "McChicken",
+            description: "Classic chicken burger",
+            price: 36.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=599",
+        },
+        {
+            id: 10,
+            name: "Filet-O-Fish",
+            description: "Fish fillet with tartar sauce",
+            price: 33.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1511689660979-10d2b1aada49?q=80&w=599",
+        },
+        {
+            id: 11,
+            name: "Big Mac",
+            description: "The legendary double-decker",
+            price: 36.0,
+            category_id: 1,
+            image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?q=80&w=599",
+        },
+        
+        // Boissons (category_id: 2)
+        {
+            id: 2,
+            name: "Qiwi juice",
+            description: "Burger with fries and drink",
+            price: 29.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1610970881699-44a5587cabec?q=80&w=500",
+        },
+        {
+            id: 16,
+            name: "Coca-Cola",
+            description: "Classic cola drink",
+            price: 15.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1554866585-cd94860890b7?q=80&w=599",
+        },
+        {
+            id: 17,
+            name: "Espresso",
+            description: "Strong Italian coffee",
+            price: 18.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=599",
+        },
+        {
+            id: 18,
+            name: "Water",
+            description: "Mineral water",
+            price: 8.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?q=80&w=599",
+        },
+        {
+            id: 19,
+            name: "Ice Tea",
+            description: "Refreshing iced tea",
+            price: 14.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1499638673689-79a0b5115d87?q=80&w=599",
+        },
+        {
+            id: 20,
+            name: "Fanta",
+            description: "Orange flavored soda",
+            price: 15.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1624517452488-04869289c4ca?q=80&w=599",
+        },
+        {
+            id: 21,
+            name: "Green Tea",
+            description: "Traditional Japanese green tea",
+            price: 12.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?q=80&w=599",
+        },
+        {
+            id: 22,
+            name: "Milkshake Banana",
+            description: "Creamy banana milkshake topped with whipped cream",
+            price: 25.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 23,
+            name: "Chocolate Milkshake",
+            description: "Rich chocolate milkshake with chocolate syrup",
+            price: 25.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1577805947697-89e18249d767?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 24,
+            name: "Strawberry Milkshake",
+            description: "Fresh strawberry milkshake with whipped cream",
+            price: 25.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1579954115545-a95591f28bfc?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 25,
+            name: "Oreo Milkshake",
+            description: "Creamy vanilla milkshake with crushed Oreos",
+            price: 28.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=599&auto=format&fit=crop",
+        },
+        {
+            id: 26,
+            name: "Cappuccino",
+            description: "Italian coffee with steamed milk foam",
+            price: 22.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1534778101976-62847782c213?q=80&w=599",
+        },
+        {
+            id: 27,
+            name: "Latte",
+            description: "Espresso with steamed milk",
+            price: 20.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1570968915860-54d5c301fa9f?q=80&w=599",
+        },
+        {
+            id: 28,
+            name: "Orange Juice",
+            description: "Freshly squeezed orange juice",
+            price: 18.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?q=80&w=599",
+        },
+        {
+            id: 29,
+            name: "Sprite",
+            description: "Lemon-lime flavored soda",
+            price: 15.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1625772299848-391b6a87d7b3?q=80&w=599",
+        },
+        {
+            id: 30,
+            name: "Smoothie",
+            description: "Mixed fruit smoothie",
+            price: 24.0,
+            category_id: 2,
+            image: "https://images.unsplash.com/photo-1505252585461-04db1eb84625?q=80&w=599",
+        },
+        
+        // Pizzas (category_id: 3)
+        {
+            id: 31,
+            name: "Margherita Pizza",
+            description: "Classic pizza with tomato sauce, mozzarella, and basil",
+            price: 55.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=599",
+        },
+        {
+            id: 32,
+            name: "Pepperoni Pizza",
+            description: "Pizza topped with pepperoni slices",
+            price: 65.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1628840042765-356cda07504e?q=80&w=599",
+        },
+        {
+            id: 33,
+            name: "Vegetarian Pizza",
+            description: "Pizza with assorted vegetables",
+            price: 60.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=599",
+        },
+        {
+            id: 34,
+            name: "Hawaiian Pizza",
+            description: "Pizza with ham and pineapple",
+            price: 62.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=599",
+        },
+        {
+            id: 35,
+            name: "BBQ Chicken Pizza",
+            description: "Pizza with BBQ sauce and chicken",
+            price: 68.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=599",
+        },
+        {
+            id: 36,
+            name: "Meat Lovers Pizza",
+            description: "Pizza loaded with various meats",
+            price: 70.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=599",
+        },
+        {
+            id: 37,
+            name: "Four Cheese Pizza",
+            description: "Pizza with four different types of cheese",
+            price: 65.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1548369937-47519962c11a?q=80&w=599",
+        },
+        {
+            id: 38,
+            name: "Mushroom Pizza",
+            description: "Pizza with various mushrooms",
+            price: 63.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1595708684082-a173bb3a06c5?q=80&w=599",
+        },
+        {
+            id: 39,
+            name: "Seafood Pizza",
+            description: "Pizza with assorted seafood toppings",
+            price: 75.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=599",
+        },
+        {
+            id: 40,
+            name: "Spicy Pizza",
+            description: "Pizza with spicy peppers and jalapeños",
+            price: 64.0,
+            category_id: 3,
+            image: "https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?q=80&w=599",
+        },
+        
+        // Desserts (category_id: 4)
+        {
+            id: 41,
+            name: "Chocolate Cake",
+            description: "Rich chocolate cake with ganache",
+            price: 35.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=599",
+        },
+        {
+            id: 42,
+            name: "Cheesecake",
+            description: "Creamy New York style cheesecake",
+            price: 38.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=599",
+        },
+        {
+            id: 43,
+            name: "Ice Cream",
+            description: "Assorted flavors of ice cream",
+            price: 25.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=599",
+        },
+        {
+            id: 44,
+            name: "Apple Pie",
+            description: "Traditional apple pie with cinnamon",
+            price: 32.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1535920527002-b35e96722eb9?q=80&w=599",
+        },
+        {
+            id: 45,
+            name: "Tiramisu",
+            description: "Italian coffee-flavored dessert",
+            price: 40.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?q=80&w=599",
+        },
+        {
+            id: 46,
+            name: "Brownie",
+            description: "Chocolate brownie with walnuts",
+            price: 28.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=599",
+        },
+        {
+            id: 47,
+            name: "Crème Brûlée",
+            description: "French custard with caramelized sugar top",
+            price: 42.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?q=80&w=599",
+        },
+        {
+            id: 48,
+            name: "Fruit Salad",
+            description: "Fresh seasonal fruits",
+            price: 30.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1564093497595-593b96d80180?q=80&w=599",
+        },
+        {
+            id: 49,
+            name: "Panna Cotta",
+            description: "Italian cream dessert with berry sauce",
+            price: 36.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=599",
+        },
+        {
+            id: 50,
+            name: "Chocolate Mousse",
+            description: "Light and airy chocolate dessert",
+            price: 34.0,
+            category_id: 4,
+            image: "https://images.unsplash.com/photo-1511715282680-fbf93a50e721?q=80&w=599",
+        },
+        
+        // Salades (category_id: 5)
+        {
+            id: 51,
+            name: "Caesar Salad",
+            description: "Romaine lettuce with Caesar dressing and croutons",
+            price: 45.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9?q=80&w=599",
+        },
+        {
+            id: 52,
+            name: "Greek Salad",
+            description: "Tomatoes, cucumbers, olives, and feta cheese",
+            price: 48.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=599",
+        },
+        {
+            id: 53,
+            name: "Caprese Salad",
+            description: "Tomatoes, mozzarella, and basil with balsamic glaze",
+            price: 50.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1595587870672-b51c2513a641?q=80&w=599",
+        },
+        {
+            id: 54,
+            name: "Chicken Salad",
+            description: "Mixed greens with grilled chicken",
+            price: 55.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=599",
+        },
+        {
+            id: 55,
+            name: "Tuna Salad",
+            description: "Mixed greens with tuna and boiled eggs",
+            price: 52.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=599",
+        },
+        {
+            id: 56,
+            name: "Waldorf Salad",
+            description: "Apples, celery, walnuts with mayonnaise",
+            price: 47.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1607532941433-304659e8198a?q=80&w=599",
+        },
+        {
+            id: 57,
+            name: "Cobb Salad",
+            description: "Lettuce, chicken, bacon, eggs, avocado, and blue cheese",
+            price: 58.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=599",
+        },
+        {
+            id: 58,
+            name: "Quinoa Salad",
+            description: "Quinoa with vegetables and herbs",
+            price: 49.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1556386470-bcdc6a5e9b9e?q=80&w=599",
+        },
+        {
+            id: 59,
+            name: "Pasta Salad",
+            description: "Pasta with vegetables and Italian dressing",
+            price: 46.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1473093226795-af9932fe5856?q=80&w=599",
+        },
+        {
+            id: 60,
+            name: "Seafood Salad",
+            description: "Mixed seafood with greens and lemon dressing",
+            price: 60.0,
+            category_id: 5,
+            image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=599",
+        },
+        
+        // Pâtes (category_id: 6)
+        {
+            id: 61,
+            name: "Spaghetti Bolognese",
+            description: "Spaghetti with meat sauce",
+            price: 58.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1551892374-ecf8754cf8b0?q=80&w=599",
+        },
+        {
+            id: 62,
+            name: "Fettuccine Alfredo",
+            description: "Fettuccine with creamy Alfredo sauce",
+            price: 56.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=599",
+        },
+        {
+            id: 63,
+            name: "Lasagna",
+            description: "Layered pasta with meat and cheese",
+            price: 62.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?q=80&w=599",
+        },
+        {
+            id: 64,
+            name: "Penne Arrabbiata",
+            description: "Penne with spicy tomato sauce",
+            price: 54.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1608219992759-8d74ed8d76eb?q=80&w=599",
+        },
+        {
+            id: 65,
+            name: "Carbonara",
+            description: "Spaghetti with eggs, cheese, and pancetta",
+            price: 59.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1612874742237-6526221588e3?q=80&w=599",
+        },
+        {
+            id: 66,
+            name: "Ravioli",
+            description: "Stuffed pasta with ricotta and spinach",
+            price: 60.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1611270629569-8b357cb88da9?q=80&w=599",
+        },
+        {
+            id: 67,
+            name: "Gnocchi",
+            description: "Potato dumplings with tomato sauce",
+            price: 57.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=599",
+        },
+        {
+            id: 68,
+            name: "Linguine with Clams",
+            description: "Linguine with clams in white wine sauce",
+            price: 65.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1563379926898-05f4575a45d8?q=80&w=599",
+        },
+        {
+            id: 69,
+            name: "Pesto Pasta",
+            description: "Pasta with basil pesto sauce",
+            price: 55.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1473093226795-af9932fe5856?q=80&w=599",
+        },
+        {
+            id: 70,
+            name: "Macaroni and Cheese",
+            description: "Macaroni with creamy cheese sauce",
+            price: 52.0,
+            category_id: 6,
+            image: "https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?q=80&w=599",
+        },
+        
+        // Fruits de Mer (category_id: 7)
+        {
+            id: 71,
+            name: "Grilled Salmon",
+            description: "Salmon fillet with lemon butter sauce",
+            price: 75.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?q=80&w=599",
+        },
+        {
+            id: 72,
+            name: "Shrimp Scampi",
+            description: "Shrimp in garlic butter sauce",
+            price: 70.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=599",
+        },
+        {
+            id: 73,
+            name: "Fish and Chips",
+            description: "Battered fish with french fries",
+            price: 65.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1579208030886-b937da0925dc?q=80&w=599",
+        },
+        {
+            id: 74,
+            name: "Lobster Tail",
+            description: "Grilled lobster tail with butter",
+            price: 95.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1559737558-2f5a35f4523b?q=80&w=599",
+        },
+        {
+            id: 75,
+            name: "Calamari",
+            description: "Fried squid rings with marinara sauce",
+            price: 60.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?q=80&w=599",
+        },
+        {
+            id: 76,
+            name: "Crab Cakes",
+            description: "Pan-fried crab cakes with remoulade",
+            price: 68.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1625943553852-781c6dd46faa?q=80&w=599",
+        },
+        {
+            id: 77,
+            name: "Seafood Paella",
+            description: "Spanish rice dish with assorted seafood",
+            price: 80.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1515443961218-a51367888e4b?q=80&w=599",
+        },
+        {
+            id: 78,
+            name: "Tuna Steak",
+            description: "Seared tuna steak with sesame crust",
+            price: 72.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1501595091296-3aa970afb3ff?q=80&w=599",
+        },
+        {
+            id: 79,
+            name: "Mussels Mariniere",
+            description: "Mussels in white wine sauce",
+            price: 65.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1548943487-a2e4e43b4853?q=80&w=599",
+        },
+        {
+            id: 80,
+            name: "Seafood Soup",
+            description: "Rich soup with various seafood",
+            price: 62.0,
+            category_id: 7,
+            image: "https://images.unsplash.com/photo-1614777986387-015c2a89b696?q=80&w=599",
+        },
+        
+        // Sandwich (category_id: 8)
+        {
+            id: 1,
+            name: "Bacon Burger",
+            description: "Smashed sweet potatoes",
+            price: 49.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=599",
+        },
+        {
+            id: 3,
+            name: "Cheese Burger",
+            description: "Classic cheeseburger with our special sauce",
+            price: 36.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1551782450-17144efb9c50?q=80&w=599",
+        },
+        {
+            id: 12,
+            name: "Triple Cheese",
+            description: "Triple the cheese, triple the taste",
+            price: 38.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1485451456034-3f9391c6f769?q=80&w=599",
+        },
+        {
+            id: 13,
+            name: "Veggie Burger",
+            description: "Plant-based patty with fresh vegetables",
+            price: 42.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1520072959219-c595dc870360?q=80&w=599",
+        },
+        {
+            id: 14,
+            name: "Mushroom Swiss Burger",
+            description: "Beef patty with sautéed mushrooms and Swiss cheese",
+            price: 45.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?q=80&w=599",
+        },
+        {
+            id: 15,
+            name: "BBQ Bacon Burger",
+            description: "Beef patty with BBQ sauce and crispy bacon",
+            price: 47.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1572802419224-296b0aeee0d9?q=80&w=599",
+        },
+        {
+            id: 81,
+            name: "Club Sandwich",
+            description: "Triple-decker sandwich with chicken, bacon, lettuce, and tomato",
+            price: 45.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1567234669003-dce7a7a88821?q=80&w=1000",
+        },
+        {
+            id: 82,
+            name: "Grilled Cheese",
+            description: "Classic grilled cheese with multiple cheese blend",
+            price: 35.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=1000",
+        },
+        {
+            id: 83,
+            name: "Chicken Sandwich",
+            description: "Grilled chicken breast with lettuce and special sauce",
+            price: 42.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?q=80&w=1000",
+        },
+        {
+            id: 84,
+            name: "Veggie Delight",
+            description: "Fresh vegetables with hummus and avocado",
+            price: 38.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1540914124281-342587941389?q=80&w=1000",
+        },
+        {
+            id: 85,
+            name: "BLT Supreme",
+            description: "Bacon, lettuce, and tomato with mayo on toasted bread",
+            price: 40.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1619096252214-ef06c45683e3?q=80&w=1000",
+        },
+        {
+            id: 86,
+            name: "Tuna Melt",
+            description: "Tuna salad with melted cheese on grilled bread",
+            price: 43.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?q=80&w=1000",
+        },
+        {
+            id: 87,
+            name: "Mediterranean Sandwich",
+            description: "Grilled vegetables, feta, and olive tapenade",
+            price: 41.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1539252554453-80ab65ce3586?q=80&w=1000",
+        },
+        {
+            id: 88,
+            name: "Steak Sandwich",
+            description: "Grilled steak with caramelized onions and cheese",
+            price: 52.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1511344407683-b1172dce025f?q=80&w=1000",
+        },
+        {
+            id: 89,
+            name: "Egg & Avocado",
+            description: "Fried egg with mashed avocado and microgreens",
+            price: 39.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=1000",
+        },
+        {
+            id: 90,
+            name: "Pulled Pork Sandwich",
+            description: "BBQ pulled pork with coleslaw",
+            price: 46.0,
+            category_id: 8,
+            image: "https://images.unsplash.com/photo-1513185158878-8d8c2a2a3da3?q=80&w=1000",
+        },
+    ];
+
+    // Generate menuData from categories and products
+    const menuData = categories.map(category => {
+        const categoryProducts = staticProducts.filter(product => product.category_id === category.id);
+        return {
+            id: category.id,
+            name: category.name,
+            products: categoryProducts.map(product => ({
+                id: product.id,
+                name: product.name,
+                description: product.description,
+                price: product.price,
+                image: product.image
+            }))
+        };
+    });
+
     const [activeCategory, setActiveCategory] = useState(null);
     const [cart, setCart] = useState([]);
     const [orderType, setOrderType] = useState('eat_in');
@@ -390,6 +1162,10 @@ const PosIndex = ({ auth }) => {
     const [alertTitle, setAlertTitle] = useState('');
     const [alertCallback, setAlertCallback] = useState(null);
     const [isConfirm, setIsConfirm] = useState(false);
+    const [showTableOccupancyModal, setShowTableOccupancyModal] = useState(false);
+    const [selectedTableId, setSelectedTableId] = useState(null);
+    const [tableOccupancies, setTableOccupancies] = useState({});
+    const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
     const [tables, setTables] = useState([
         { id: '1', status: 'available' },
         { id: '2', status: 'available' },
@@ -402,14 +1178,7 @@ const PosIndex = ({ auth }) => {
         { id: '9', status: 'available' },
         { id: '10', status: 'available' },
         { id: '11', status: 'available' },
-        { id: '12', status: 'available' },
-        // Patio tables
-        { id: '20', status: 'available' },
-        { id: '21', status: 'available' },
-        { id: '22', status: 'available' },
-        { id: '23', status: 'available' },
-        { id: '24', status: 'available' },
-        { id: '25', status: 'available' },
+        { id: '12', status: 'available' }
     ]);
     const [activeFloor, setActiveFloor] = useState('Main Floor');
     const [orderFromBar, setOrderFromBar] = useState(false);
@@ -571,8 +1340,9 @@ const PosIndex = ({ auth }) => {
         const newOrder = {
             id: newOrderId,
             items: [],
-            type: 'takeout', // Default type
-            table_number: '',
+            type: 'takeout', // Default type, will be updated when user selects
+            table_number: '', // No table assigned initially
+            numberOfPeople: 0, // Will be set when a table is selected
             notes: '',
             status: 'pending', // En cours
             timestamp: new Date().toLocaleString('fr-FR', {
@@ -599,10 +1369,7 @@ const PosIndex = ({ auth }) => {
         setActivePromotion(null);
         setCustomizations({});
         
-        // Make sure we're showing the caisse tab with our new order
-        setActiveTab('caisse');
-        
-        // Show service type modal for the new order
+        // Show service type selection modal
         setShowServiceTypeModal(true);
     };
 
@@ -637,7 +1404,8 @@ const PosIndex = ({ auth }) => {
                     notes: notes,
                     subtotal: subtotal,
                     tax: tax,
-                    total: total
+                    total: total,
+                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1
                 }
                 : order
         ));
@@ -776,11 +1544,11 @@ const PosIndex = ({ auth }) => {
         setOrderType(type);
         setShowServiceTypeModal(false);
         
-        // If eat_in is selected and showTables is true, switch to tables tab temporarily
-        if (type === 'eat_in' && showTables) {
+        // If eat_in is selected, switch to tables tab
+        if (type === 'eat_in') {
             setActiveTab('tables');
         } else {
-            // For other service types, make sure we stay on or return to caisse tab
+            // For takeout and delivery, go to caisse tab
             setActiveTab('caisse');
         }
     };
@@ -861,22 +1629,41 @@ const PosIndex = ({ auth }) => {
     };
 
     const handleTableSelect = (tableId) => {
+        console.log('Table selected:', tableId);
+        
         // Check if table is already occupied
         const tableOccupied = activeOrders.some(order => 
             order.status === 'pending' && order.table_number === tableId
         );
         
         if (tableOccupied) {
-            showAlert('Cette table est déjà occupée.', 'Attention');
-            return;
+            console.log('Table is occupied, showing modify modal');
+            // Table is occupied - show modify occupancy modal
+            setSelectedTableId(tableId);
+            setIsSelectedTableOccupied(true);
+            
+            // Find the current order for this table to get number of people
+            const currentOrder = activeOrders.find(order => 
+                order.status === 'pending' && order.table_number === tableId
+            );
+            
+            // Set initial people from the existing order or default to 1
+            const currentPeople = currentOrder?.numberOfPeople || 1;
+            setShowTableOccupancyModal(true);
+        } else {
+            // Check if there's an active order before allowing selection of an empty table
+            if (!activeOrderId) {
+                console.log('No active order, showing alert');
+                showAlert('Please create a new order before selecting a table.', 'Action Required');
+                return;
+            }
+            
+            console.log('Table is available, showing new occupancy modal');
+            // Table is available - show new occupancy modal
+            setSelectedTableId(tableId);
+            setIsSelectedTableOccupied(false);
+            setShowTableOccupancyModal(true);
         }
-        
-        // Set the table number
-        setTableNumber(tableId);
-        setOrderType('eat_in');
-        
-        // Switch to the Caisse tab
-        setActiveTab('caisse');
     };
 
     // Update table status whenever activeOrders changes
@@ -943,6 +1730,85 @@ const PosIndex = ({ auth }) => {
             }
             setStartNewInput(false);
         }
+    };
+
+    // Add a new function to handle table occupancy
+    const handleTableOccupancySave = (tableId, numberOfPeople, cancelOrder = false) => {
+        if (cancelOrder) {
+            // Cancel the order for this table
+            const orderToCancel = activeOrders.find(order => 
+                order.status === 'pending' && order.table_number === tableId
+            );
+            
+            if (orderToCancel) {
+                setActiveOrders(activeOrders.map(order => 
+                    order.id === orderToCancel.id
+                        ? { ...order, status: 'cancelled' } 
+                        : order
+                ));
+                
+                // If cancelling the active order, clear the cart
+                if (orderToCancel.id === activeOrderId) {
+                    setCart([]);
+                    setActiveOrderId(null);
+                }
+            }
+            
+            // Update table occupancies
+            const updatedOccupancies = { ...tableOccupancies };
+            delete updatedOccupancies[tableId];
+            setTableOccupancies(updatedOccupancies);
+            
+            return;
+        }
+        
+        // Store the number of people for this table
+        setTableOccupancies({
+            ...tableOccupancies,
+            [tableId]: numberOfPeople
+        });
+        
+        if (isSelectedTableOccupied) {
+            // Update existing order with new number of people
+            const orderToUpdate = activeOrders.find(order => 
+                order.status === 'pending' && order.table_number === tableId
+            );
+            
+            if (orderToUpdate) {
+                setActiveOrders(activeOrders.map(order => 
+                    order.id === orderToUpdate.id
+                        ? { ...order, numberOfPeople: numberOfPeople } 
+                        : order
+                ));
+                
+                // If updating the active order, update the state
+                if (orderToUpdate.id === activeOrderId) {
+                    // Just update the number of people in the current order
+                }
+            }
+        } else {
+            // We know there's an active order because of the check in handleTableSelect
+            // Just update the current active order with the table number and people
+            setTableNumber(tableId);
+            setOrderType('eat_in');
+            
+            // Update the current active order with the table number and people
+            saveCurrentOrderState();
+            
+            setActiveOrders(activeOrders.map(order => 
+                order.id === activeOrderId
+                    ? { 
+                        ...order, 
+                        type: 'eat_in',
+                        table_number: tableId,
+                        numberOfPeople: numberOfPeople
+                    }
+                    : order
+            ));
+        }
+        
+        // Switch to the Caisse tab
+        setActiveTab('caisse');
     };
 
     return (
@@ -1422,10 +2288,90 @@ const PosIndex = ({ auth }) => {
                                                                 </>
                                                             )}
                                                         </div>
+<<<<<<< HEAD
                                                     ))}
                                                 </div>
                                             </div>
                                         )}
+=======
+                                                    </div>
+                                                    
+                                                    {/* Tables Area */}
+                                                    <div className="ml-96 grid grid-cols-3 gap-8 p-6">
+                                                        {tables.filter(table => parseInt(table.id) < 20).map(table => (
+                                                            <div 
+                                                                key={table.id}
+                                                                onClick={() => handleTableSelect(table.id)}
+                                                                className={`relative ${
+                                                                    table.status === 'occupied' 
+                                                                        ? 'bg-red-400 border-red-600' 
+                                                                        : 'bg-green-400 border-green-600'
+                                                                } ${
+                                                                    parseInt(table.id) > 8 ? 'w-48 h-32' : 'w-32 h-32'
+                                                                } rounded-md flex flex-col items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
+                                                            >
+                                                                <span className="text-2xl font-bold">{table.id}</span>
+                                                                
+                                                                {/* Show number of people if table is occupied */}
+                                                                {table.status === 'occupied' && (
+                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
+                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Table Chairs */}
+                                                                <div className="absolute -top-6 left-10 w-12 h-6 bg-blue-300 rounded-t-full"></div>
+                                                                <div className="absolute -right-6 top-10 w-6 h-12 bg-blue-300 rounded-r-full"></div>
+                                                                <div className="absolute -bottom-6 left-10 w-12 h-6 bg-blue-300 rounded-b-full"></div>
+                                                                <div className="absolute -left-6 top-10 w-6 h-12 bg-blue-300 rounded-l-full"></div>
+                                                                
+                                                                {parseInt(table.id) > 8 && (
+                                                                    <>
+                                                                        <div className="absolute -top-6 right-10 w-12 h-6 bg-blue-300 rounded-t-full"></div>
+                                                                        <div className="absolute -bottom-6 right-10 w-12 h-6 bg-blue-300 rounded-b-full"></div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Patio Area */}
+                                            {activeFloor === 'Patio' && (
+                                                <div className="bg-emerald-100 p-6 rounded-md min-h-[600px] relative">
+                                                    <div className="grid grid-cols-3 gap-8 p-6">
+                                                        {tables.filter(table => parseInt(table.id) >= 20).map(table => (
+                                                            <div 
+                                                                key={table.id}
+                                                                onClick={() => handleTableSelect(table.id)}
+                                                                className={`relative ${
+                                                                    table.status === 'occupied' 
+                                                                        ? 'bg-red-400 border-red-600' 
+                                                                        : 'bg-green-400 border-green-600'
+                                                                } w-32 h-32 rounded-full flex flex-col items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
+                                                            >
+                                                                <span className="text-2xl font-bold">{table.id}</span>
+                                                                
+                                                                {/* Show number of people if table is occupied */}
+                                                                {table.status === 'occupied' && (
+                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
+                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Round Table Chairs */}
+                                                                <div className="absolute -top-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-12 -right-6 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute -bottom-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-12 -left-6 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+>>>>>>> d79a3b6e97f5872204d126a5db3674431e4ff0c9
                                         
                                         {/* Patio Area */}
                                         {activeFloor === 'Patio' && (
@@ -1470,6 +2416,7 @@ const PosIndex = ({ auth }) => {
                         </div>
                     )}
 
+<<<<<<< HEAD
                     {/* Cash Register (Caisse) View */}
                     {activeTab === 'caisse' && (
                         <>
@@ -1511,6 +2458,25 @@ const PosIndex = ({ auth }) => {
                             </div>
                         </>
                     )}
+=======
+                        {/* Cash Register (Caisse) View */}
+                        {activeTab === 'caisse' && (
+                            <>
+                                {/* Products Section */}
+                                <div className="flex-1 overflow-auto">
+                                    <ProductSection 
+                                        onProductSelect={(product) => {
+                                            setSelectedProduct(product);
+                                            setShowCustomizeModal(true);
+                                        }}
+                                        activeCategory={activeCategory} 
+                                        menuData={menuData}
+                                    />
+                                </div>
+                            </>
+                        )}
+                    </div>
+>>>>>>> d79a3b6e97f5872204d126a5db3674431e4ff0c9
                 </div>
             </div>
 
@@ -1548,6 +2514,15 @@ const PosIndex = ({ auth }) => {
                 onClose={() => setShowPaymentModal(false)}
                 onComplete={handlePayment}
                 total={total}
+            />
+
+            <TableOccupancyModal
+                isOpen={showTableOccupancyModal}
+                onClose={() => setShowTableOccupancyModal(false)}
+                onSave={handleTableOccupancySave}
+                tableId={selectedTableId}
+                initialPeople={tableOccupancies[selectedTableId] || 1}
+                isOccupied={isSelectedTableOccupied}
             />
 
             {/* Order History Log overlay */}
