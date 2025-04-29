@@ -176,14 +176,14 @@ const categoryIcons = {
 
 // Add image URLs for each category
 const categoryImages = {
-    1: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80", // Plats (main dish)
-    2: "/storage/categ_images/boisson_image.png", // Boissons (drinks)
-    3: "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80", // Pizzas
-    4: "/storage/categ_images/cake.png", // Desserts (cake/pastry)
-    5: "/storage/categ_images/salad.png", // Salades (salad)
-    6: "/storage/categ_images/pasta.png", // Pâtes (pasta)
-    7: "/storage/categ_images/seafood.png", // Fruits de Mer (seafood)
-    8: "https://images.unsplash.com/photo-1540713434306-58505cf1b6fc?auto=format&fit=crop&w=400&q=80", // Sandwich
+    1: "/images/categ_images/pasta.png", // Plats - using pasta image temporarily, update with appropriate image if available
+    2: "/images/categ_images/boisson_image.png", // Boissons (drinks)
+    3: "/images/categ_images/pasta.png", // Pizzas - using pasta image temporarily, update with appropriate image if available
+    4: "/images/categ_images/cake.png", // Desserts (cake/pastry)
+    5: "/images/categ_images/salad.png", // Salades (salad)
+    6: "/images/categ_images/pasta.png", // Pâtes (pasta)
+    7: "/images/categ_images/seafood.png", // Fruits de Mer (seafood)
+    8: "/images/categ_images/pasta.png", // Sandwich - using pasta image temporarily, update with appropriate image if available
 };
 
 // CategoryCards Component
