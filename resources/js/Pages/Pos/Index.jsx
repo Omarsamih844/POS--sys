@@ -23,6 +23,7 @@ import {
     XMarkIcon,
     QueueListIcon
 } from '@heroicons/react/24/solid';
+import OrderDetailsModal from './OrderDetailsModal';
 
 // ActiveOrdersModal Component
 const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
@@ -1144,6 +1145,8 @@ const PosIndex = ({ auth }) => {
     const [deleteQty, setDeleteQty] = useState(1);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
+    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1757,6 +1760,12 @@ const PosIndex = ({ auth }) => {
         
         // Switch to the Caisse tab
         setActiveTab('caisse');
+    };
+
+    // Add function to open order details modal
+    const openOrderDetails = (order) => {
+        setSelectedOrderDetails(order);
+        setShowOrderDetailsModal(true);
     };
 
     return (
@@ -2406,6 +2415,12 @@ const PosIndex = ({ auth }) => {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => openOrderDetails(order)}
+                                                                    className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                >
+                                                                    Détails
+                                                                </button>
                                                                 {order.status === 'pending' && (
                                                                     <>
                                                                         <button 
@@ -2482,6 +2497,12 @@ const PosIndex = ({ auth }) => {
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                                 <div className="flex gap-2">
                                                                     <button 
+                                                                        onClick={() => openOrderDetails(order)}
+                                                                        className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                    >
+                                                                        Détails
+                                                                    </button>
+                                                                    <button 
                                                                         onClick={() => {
                                                                             switchToOrder(order.id);
                                                                             setShowOrderHistory(false);
@@ -2541,15 +2562,23 @@ const PosIndex = ({ auth }) => {
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{order.total.toFixed(2)} MAD</td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        const receiptGenerator = Receipt();
-                                                                        receiptGenerator.generateReceipt(order);
-                                                                    }}
-                                                                    className="px-2 py-1 bg-green-600 text-white rounded"
-                                                                >
-                                                                    Imprimer
-                                                                </button>
+                                                                <div className="flex gap-2">
+                                                                    <button 
+                                                                        onClick={() => openOrderDetails(order)}
+                                                                        className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                    >
+                                                                        Détails
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const receiptGenerator = Receipt();
+                                                                            receiptGenerator.generateReceipt(order);
+                                                                        }}
+                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                    >
+                                                                        Imprimer
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))
@@ -2577,6 +2606,7 @@ const PosIndex = ({ auth }) => {
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
@@ -2592,12 +2622,20 @@ const PosIndex = ({ auth }) => {
                                                                 {order.table_number && ` - Table ${order.table_number}`}
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{order.total.toFixed(2)} MAD</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                                <button 
+                                                                    onClick={() => openOrderDetails(order)}
+                                                                    className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                >
+                                                                    Détails
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     ))
                                                 }
                                                 {[...activeOrders, ...orders].filter(order => order.status === 'cancelled').length === 0 && (
                                                     <tr>
-                                                        <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">Aucune commande annulée</td>
+                                                        <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">Aucune commande annulée</td>
                                                     </tr>
                                                 )}
                                             </tbody>
@@ -2704,6 +2742,11 @@ const PosIndex = ({ auth }) => {
                 activeOrders={activeOrders}
                 activeOrderId={activeOrderId}
                 onOrderSelect={switchToOrder}
+            />
+            <OrderDetailsModal
+                isOpen={showOrderDetailsModal}
+                onClose={() => setShowOrderDetailsModal(false)}
+                order={selectedOrderDetails}
             />
         </>
     );
