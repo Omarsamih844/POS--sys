@@ -1773,17 +1773,34 @@ const PosIndex = ({ auth }) => {
     };
 
     // Add a new function to handle table occupancy
-    const handleTableOccupancySave = (tableId, numberOfPeople, cancelOrder = false) => {
+    const handleTableOccupancySave = (tableId, numberOfPeople, shouldCancelOrder = false) => {
         setShowTableOccupancyModal(false);
 
-        if (cancelOrder) {
+        if (shouldCancelOrder) {
             // Cancel the order for this table
             const orderToCancel = activeOrders.find(order => 
                 order.status === 'pending' && order.table_number === tableId
             );
             
             if (orderToCancel) {
-                cancelOrder(orderToCancel.id);
+                // Call the global cancelOrder function by explicitly referring to it
+                const orderIdToCancel = orderToCancel.id;
+                showConfirm('Êtes-vous sûr de vouloir annuler cette commande?', (confirmed) => {
+                    if (confirmed) {
+                        // Update order status to cancelled
+                        setActiveOrders(activeOrders.map(order => 
+                            order.id === orderIdToCancel
+                                ? { ...order, status: 'cancelled' } // Annulée
+                                : order
+                        ));
+                        
+                        // If cancelling the active order, clear the cart
+                        if (orderIdToCancel === activeOrderId) {
+                            setCart([]);
+                            setActiveOrderId(null);
+                        }
+                    }
+                });
             }
             
             // Update the tableOccupancies
