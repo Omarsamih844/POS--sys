@@ -170,7 +170,7 @@ const Receipt = () => {
             
             y += lineHeight;
             const orderType = order.type === 'eat_in' ? 'Sur place' : 
-                             order.type === 'takeaway' ? 'À emporter' : 
+                             order.type === 'takeout' ? 'À emporter' : 
                              order.type === 'delivery' ? 'Livraison' : order.type;
             doc.text(`Type: ${orderType}`, margin, y);
             if (order.table_number) {
@@ -314,29 +314,66 @@ const Receipt = () => {
                 doc.text(`${order.total.toFixed(2)} MAD`, totalValueX, y, { align: 'right' });
             }
 
-            // Payment Information
-            y += lineHeight + 8; // Extra space before payment info
-            doc.setFont('helvetica', 'normal');
+            // Draw horizontal line separator
+            y += lineHeight + 5;
+            doc.setDrawColor(150, 150, 150);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += lineHeight + 5;
+
+            // Payment Information - Enhanced section
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.text('INFORMATIONS DE PAIEMENT', pageWidth / 2, y, { align: 'center' });
+            y += lineHeight + 2;
             
+            // Type of command in French
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            const orderTypeInFrench = order.type === 'eat_in' ? 'Sur place' : 
+                                     order.type === 'takeout' ? 'À emporter' : 
+                                     order.type === 'delivery' ? 'Livraison' : order.type;
+            doc.text(`Type de commande:`, margin, y);
+            doc.setFont('helvetica', 'bold');
+            doc.text(orderTypeInFrench, margin + 85, y);
+            y += lineHeight;
+            
+            // Payment method
+            doc.setFont('helvetica', 'normal');
             const paymentMethod = order.payment.method === 'cash' ? 'Espèces' : 
                                 order.payment.method === 'card' ? 'Carte bancaire' : 
                                 order.payment.method === 'mobile' ? 'Paiement mobile' : 
                                 order.payment.method;
-            
-            doc.text(`Mode de paiement: ${paymentMethod}`, margin, y);
-            
+            doc.text(`Mode de paiement:`, margin, y);
+            doc.setFont('helvetica', 'bold');
+            doc.text(paymentMethod, margin + 85, y);
             y += lineHeight;
-            doc.text(`Montant payé: ${order.payment.amount.toFixed(2)} MAD`, margin, y);
+
+            // Payment amount
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Montant reçu:`, margin, y);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${order.payment.amount.toFixed(2)} MAD`, margin + 85, y);
+            y += lineHeight;
+            
+            // Order total
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Montant total:`, margin, y);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${order.total.toFixed(2)} MAD`, margin + 85, y);
+            y += lineHeight;
             
             // Calculate change
             const change = Math.max(0, order.payment.amount - order.total);
             if (change > 0) {
+                doc.setFont('helvetica', 'normal');
+                doc.text(`Monnaie rendue:`, margin, y);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${change.toFixed(2)} MAD`, margin + 85, y);
                 y += lineHeight;
-                doc.text(`Monnaie rendue: ${change.toFixed(2)} MAD`, margin, y);
             }
 
             // Barcode
-            y += lineHeight + 15; // More space before barcode
+            y += lineHeight + 10; // More space before barcode
             const canvas = document.createElement('canvas');
             JsBarcode(canvas, order.id, {
                 format: 'CODE128',
