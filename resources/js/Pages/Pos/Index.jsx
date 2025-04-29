@@ -20,8 +20,96 @@ import {
     PlusIcon,
     ClipboardDocumentIcon,
     ClockIcon,
-    XMarkIcon
+    XMarkIcon,
+    QueueListIcon
 } from '@heroicons/react/24/solid';
+
+// ActiveOrdersModal Component
+const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
+    const pendingOrders = activeOrders.filter(order => order.status === 'pending');
+    
+    return isOpen ? (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-3/4 max-w-2xl max-h-[80vh] flex flex-col">
+                <div className="p-4 border-b flex justify-between items-center bg-blue-700 text-white rounded-t-lg">
+                    <h2 className="text-xl font-bold">Commandes actives</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-white hover:text-gray-200"
+                    >
+                        <XMarkIcon className="h-6 w-6" />
+                    </button>
+                </div>
+                <div className="p-4 overflow-auto flex-grow">
+                    {pendingOrders.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-gray-500">
+                            <ShoppingCartIcon className="h-12 w-12 mb-2" />
+                            <p className="text-lg font-medium">Aucune commande active</p>
+                            <p className="text-sm">Créez une nouvelle commande pour commencer</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {pendingOrders.map(order => (
+                                <div 
+                                    key={order.id}
+                                    onClick={() => {
+                                        onOrderSelect(order.id);
+                                        onClose();
+                                    }}
+                                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                                        activeOrderId === order.id 
+                                            ? 'bg-blue-50 border-blue-300 shadow-sm' 
+                                            : 'bg-white border-gray-200 hover:border-blue-200'
+                                    }`}
+                                >
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${
+                                            order.type === 'eat_in' 
+                                                ? 'bg-green-100 text-green-800' 
+                                                : order.type === 'takeout' 
+                                                    ? 'bg-blue-100 text-blue-800' 
+                                                    : 'bg-purple-100 text-purple-800'
+                                        }`}>
+                                            {order.type === 'eat_in' ? 'Sur Place' : order.type === 'takeout' ? 'À Emporter' : 'Livraison'}
+                                        </span>
+                                        <span className="font-medium text-sm text-gray-500">{order.timestamp}</span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between mb-2">
+                                        <span className="font-semibold">{order.id}</span>
+                                        <span className="font-bold text-blue-700">{order.total ? order.total.toFixed(2) : '0.00'} MAD</span>
+                                    </div>
+                                    
+                                    {order.table_number && (
+                                        <div className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded inline-block">
+                                            Table {order.table_number}
+                                            {order.numberOfPeople && ` - ${order.numberOfPeople} pers.`}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="mt-2 text-sm text-gray-600">
+                                        <span>{order.items ? order.items.reduce((sum, item) => sum + item.quantity, 0) : 0} articles</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="border-t border-gray-200 p-3 bg-gray-50 rounded-b-lg flex justify-between">
+                    <div className="text-sm text-gray-600">
+                        <span className="font-medium">{pendingOrders.length}</span> commande{pendingOrders.length !== 1 ? 's' : ''} active{pendingOrders.length !== 1 ? 's' : ''}
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium"
+                    >
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    ) : null;
+};
 
 // Note: menuData is now defined in the PosIndex component to avoid ReferenceError
 
@@ -1055,6 +1143,7 @@ const PosIndex = ({ auth }) => {
     const [deleteTarget, setDeleteTarget] = useState(null); // { product_id, quantity }
     const [deleteQty, setDeleteQty] = useState(1);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1698,6 +1787,18 @@ const PosIndex = ({ auth }) => {
                                     >
                                         <PlusIcon className="h-4 w-4" />
                                         Nouvelle
+                                    </button>
+                                    <button
+                                        onClick={() => setShowActiveOrdersModal(true)}
+                                        className="px-2 py-1 bg-white text-blue-600 rounded-full font-normal shadow hover:bg-blue-50 hover:scale-105 transition-all flex items-center gap-1 border border-blue-200 text-xs"
+                                    >
+                                        <QueueListIcon className="h-4 w-4" />
+                                        <span>Actives</span>
+                                        {activeOrders.filter(o => o.status === 'pending').length > 0 && (
+                                            <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                                {activeOrders.filter(o => o.status === 'pending').length}
+                                            </span>
+                                        )}
                                     </button>
                                     <button
                                         onClick={() => setShowOrderHistory(true)}
@@ -2596,6 +2697,14 @@ const PosIndex = ({ auth }) => {
                     </div>
                 </div>
             )}
+            {/* Active Orders Modal */}
+            <ActiveOrdersModal 
+                isOpen={showActiveOrdersModal}
+                onClose={() => setShowActiveOrdersModal(false)}
+                activeOrders={activeOrders}
+                activeOrderId={activeOrderId}
+                onOrderSelect={switchToOrder}
+            />
         </>
     );
 };
