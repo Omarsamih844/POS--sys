@@ -74,7 +74,6 @@ const ProductGrid = ({ categoryId, onProductSelect, menuData }) => {
         </div>
     );
 };
-
 // Category icons mapping
 const categoryIcons = {
     1: "🍱", // Plats
@@ -167,7 +166,6 @@ const ProductSection = ({ onProductSelect, activeCategory, menuData }) => {
     const handleCategorySelect = (categoryId) => {
         setSelectedCategory(categoryId);
     };
-
     const handleBackToCategories = () => {
         setSelectedCategory(null);
     };
@@ -1212,7 +1210,6 @@ const PosIndex = ({ auth }) => {
     const handleNewOrder = () => {
         // Generate unique ID for the new order
         const newOrderId = `TEMP-${Date.now()}`;
-        
         // Create a new order with initial state
         const newOrder = {
             id: newOrderId,
@@ -1245,7 +1242,6 @@ const PosIndex = ({ auth }) => {
         setSelectedProduct(null);
         setActivePromotion(null);
         setCustomizations({});
-        
         // Show service type selection modal
         setShowServiceTypeModal(true);
     };
@@ -1255,7 +1251,6 @@ const PosIndex = ({ auth }) => {
         if (activeOrderId) {
             saveCurrentOrderState();
         }
-        
         // Load the selected order
         const orderToLoad = activeOrders.find(order => order.id === orderId);
         if (orderToLoad) {
@@ -1644,8 +1639,7 @@ const PosIndex = ({ auth }) => {
                     order.id === orderToUpdate.id
                         ? { ...order, numberOfPeople: numberOfPeople } 
                         : order
-                ));
-                
+                )); 
                 // If updating the active order, update the state
                 if (orderToUpdate.id === activeOrderId) {
                     // Just update the number of people in the current order
@@ -1717,7 +1711,7 @@ const PosIndex = ({ auth }) => {
                             {/* Status Indicators */}
                             <div className="flex gap-2 mt-1">
                                 <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-700 font-semibold text-xs">
-                                    <span>Art.:</span>
+                                    <span>Produits :</span>
                                     <span className="text-base">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
                                 </div>
                                 <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-900 font-semibold text-xs">
@@ -1815,10 +1809,7 @@ const PosIndex = ({ auth }) => {
                                     ))}
                                 </div>
                             )}
-                        </div>
-
-                        
-
+                        </div>  
                         {/* Taxes and Total - more compact */}
                         <div className="border-t border-gray-200 p-1 bg-gray-50">
                             <div className="space-y-1">
@@ -1849,7 +1840,6 @@ const PosIndex = ({ auth }) => {
                                 </div>
                             </div>
                         </div>
-
                         {/* Numeric Keypad - traditional calculator layout */}
                         <div className="border-t border-gray-200 bg-gray-50 p-2">
                             <div className="grid grid-cols-4 gap-2">
@@ -1985,13 +1975,12 @@ const PosIndex = ({ auth }) => {
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
                                 }`}
-                            >
+                            >   
                                 <BanknotesIcon className="h-5 w-5 mr-2" />
                                 Payer ({total.toFixed(2)} MAD)
                             </button>
                         </div>
                     </div>
-
                     {/* Right Side - Products or Tables - Adjust width to match left side changes */}
                     <div className="w-2/3 md:w-3/5 lg:w-3/5 xl:w-2/3 flex flex-col bg-gray-100">
                         {/* Top Navigation Tabs */}
@@ -2060,62 +2049,25 @@ const PosIndex = ({ auth }) => {
                                             {/* Restaurant Layout - Main Floor */}
                                             {activeFloor === 'Main Floor' && (
                                                 <div className="bg-amber-100 p-6 rounded-md min-h-[600px] relative">
-                                                    {/* Kitchen Area */}
-                                                    <div className="absolute top-6 left-6 w-80 h-64 bg-gray-300 rounded-md border-2 border-gray-400 flex items-center justify-center">
-                                                        <div className="absolute top-2 left-2 text-sm font-bold bg-gray-200 px-2 py-1 rounded">
-                                                            Kitchen
-                                                        </div>
-                                                        <div className="grid grid-cols-2 gap-4 p-4">
-                                                            {/* Kitchen equipment */}
-                                                            <div className="bg-gray-500 h-16 w-16 rounded-full"></div>
-                                                            <div className="bg-gray-500 h-16 w-16 rounded-full"></div>
-                                                            <div className="bg-gray-500 h-16 w-16 rounded-full"></div>
-                                                            <div className="bg-gray-500 h-16 w-16 rounded-full"></div>
-                                                            
-                                                            {/* Sinks */}
-                                                            <div className="bg-white h-16 w-16 rounded-full border-2 border-gray-400 flex items-center justify-center">
-                                                                <div className="bg-gray-400 h-1 w-8 rounded"></div>
-                                                            </div>
-                                                            <div className="bg-white h-16 w-16 rounded-full border-2 border-gray-400 flex items-center justify-center">
-                                                                <div className="bg-gray-400 h-1 w-8 rounded"></div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    {/* Tables Area */}
-                                                    <div className="ml-96 grid grid-cols-3 gap-8 p-6">
+                                                    {/* Tables Area - kitchen removed, full width */}
+                                                    <div className="w-full grid grid-cols-3 gap-8 p-6 justify-items-center">
                                                         {tables.filter(table => parseInt(table.id) < 20).map(table => (
                                                             <div 
                                                                 key={table.id}
                                                                 onClick={() => handleTableSelect(table.id)}
-                                                                className={`relative ${
-                                                                    table.status === 'occupied' 
-                                                                        ? 'bg-red-400 border-red-600' 
-                                                                        : 'bg-green-400 border-green-600'
-                                                                } ${
-                                                                    parseInt(table.id) > 8 ? 'w-48 h-32' : 'w-32 h-32'
-                                                                } rounded-md flex flex-col items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
+                                                                className={`relative w-full h-48 max-w-xs rounded-xl shadow-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105
+                                                                    ${table.status === 'occupied' ? 'bg-red-100 border-red-400' : 'bg-green-100 border-green-400'}
+                                                                `}
                                                             >
-                                                                <span className="text-2xl font-bold">{table.id}</span>
-                                                                
-                                                                {/* Show number of people if table is occupied */}
+                                                                {/* Status Badge */}
+                                                                <div className={`absolute top-2 right-2 w-4 h-4 rounded-full ${table.status === 'occupied' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                                                                {/* Table Number */}
+                                                                <span className="text-3xl font-bold text-gray-800">{table.id}</span>
+                                                                {/* Occupancy */}
                                                                 {table.status === 'occupied' && (
-                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
+                                                                    <div className="mt-2 px-2 py-1 bg-white rounded-full text-xs font-semibold shadow">
                                                                         {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
                                                                     </div>
-                                                                )}
-                                                                
-                                                                {/* Table Chairs */}
-                                                                <div className="absolute -top-6 left-10 w-12 h-6 bg-blue-300 rounded-t-full"></div>
-                                                                <div className="absolute -right-6 top-10 w-6 h-12 bg-blue-300 rounded-r-full"></div>
-                                                                <div className="absolute -bottom-6 left-10 w-12 h-6 bg-blue-300 rounded-b-full"></div>
-                                                                <div className="absolute -left-6 top-10 w-6 h-12 bg-blue-300 rounded-l-full"></div>
-                                                                
-                                                                {parseInt(table.id) > 8 && (
-                                                                    <>
-                                                                        <div className="absolute -top-6 right-10 w-12 h-6 bg-blue-300 rounded-t-full"></div>
-                                                                        <div className="absolute -bottom-6 right-10 w-12 h-6 bg-blue-300 rounded-b-full"></div>
-                                                                    </>
                                                                 )}
                                                             </div>
                                                         ))}
