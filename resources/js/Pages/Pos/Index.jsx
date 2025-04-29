@@ -20,8 +20,11 @@ import {
     PlusIcon,
     ClipboardDocumentIcon,
     ClockIcon,
-    XMarkIcon
+    XMarkIcon,
+    ArrowUpTrayIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/solid';
+import { jsPDF } from 'jspdf';
 
 // Note: menuData is now defined in the PosIndex component to avoid ReferenceError
 
@@ -1055,6 +1058,8 @@ const PosIndex = ({ auth }) => {
     const [deleteTarget, setDeleteTarget] = useState(null); // { product_id, quantity }
     const [deleteQty, setDeleteQty] = useState(1);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [ordersReadyForPayment, setOrdersReadyForPayment] = useState({});
+    const [showOrders, setShowOrders] = useState(false);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1535,7 +1540,7 @@ const PosIndex = ({ auth }) => {
         
         // Mark tables with active orders as occupied
         activeOrders.forEach(order => {
-            if (order.status === 'pending' && order.table_number) {
+            if ((order.status === 'pending' || order.status === 'in_progress') && order.table_number) {
                 const tableIndex = updatedTables.findIndex(t => t.id === order.table_number);
                 if (tableIndex >= 0) {
                     updatedTables[tableIndex].status = 'occupied';
@@ -1597,7 +1602,7 @@ const PosIndex = ({ auth }) => {
         if (cancelOrder) {
             // Cancel the order for this table
             const orderToCancel = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
+                (order.status === 'pending' || order.status === 'in_progress') && order.table_number === tableId
             );
             
             if (orderToCancel) {
@@ -1631,7 +1636,7 @@ const PosIndex = ({ auth }) => {
         if (isSelectedTableOccupied) {
             // Update existing order with new number of people
             const orderToUpdate = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
+                (order.status === 'pending' || order.status === 'in_progress') && order.table_number === tableId
             );
             
             if (orderToUpdate) {
@@ -1668,6 +1673,127 @@ const PosIndex = ({ auth }) => {
         
         // Switch to the Caisse tab
         setActiveTab('caisse');
+    };
+
+    const generateKitchenReceipt = (order) => {
+        // Create a new PDF document with 7cm width
+        const doc = new jsPDF({
+            unit: 'cm',
+            format: [7, 'auto']
+        });
+
+        // Get the current date and time
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('fr-FR');
+        const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        // Set initial position
+        let y = 0.5;
+
+        // Add restaurant name
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text('BURGER HOUSE', 3.5, y, { align: 'center' });
+        y += 0.8;
+
+        // Add ticket type
+        doc.setFontSize(14);
+        doc.text('TICKET DE CUISINE', 3.5, y, { align: 'center' });
+        y += 0.8;
+
+        // Add date and time
+        doc.setFontSize(10);
+        doc.text(`${dateStr} - ${timeStr}`, 3.5, y, { align: 'center' });
+        y += 0.8;
+
+        // Add separator line
+        doc.setDrawColor(0);
+        doc.line(0.5, y, 6.5, y);
+        y += 0.5;
+
+        // Add table info
+        doc.setFontSize(14);
+        doc.text(`TABLE: ${order.table_number || '--'}`, 3.5, y, { align: 'center' });
+        y += 0.8;
+
+        // Add separator line
+        doc.line(0.5, y, 6.5, y);
+        y += 0.5;
+
+        // Add items
+        doc.setFontSize(12);
+        order.items.forEach(item => {
+            // Check if we need a new page
+            if (y > 25) {
+                doc.addPage();
+                y = 0.5;
+            }
+
+            // Add item quantity and name
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.quantity}x`, 0.5, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(item.name, 1.5, y);
+            y += 0.6;
+        });
+
+        // Add separator line
+        y += 0.3;
+        doc.line(0.5, y, 6.5, y);
+        y += 0.5;
+
+        // Add footer
+        doc.setFontSize(10);
+        doc.text('Fin de commande', 3.5, y, { align: 'center' });
+        y += 0.5;
+        doc.text('Merci!', 3.5, y, { align: 'center' });
+
+        // Save the PDF
+        doc.save(`kitchen-ticket-${order.id}.pdf`);
+    };
+
+    const handleSendToKitchen = () => {
+        if (!activeOrderId || cart.length === 0) return;
+        
+        // Find the current order
+        const currentOrder = activeOrders.find(order => order.id === activeOrderId);
+        if (!currentOrder) return;
+        
+        // Create a copy of the order for history
+        const orderForHistory = {
+            ...currentOrder,
+            items: cart,
+            status: 'in_progress',
+            timestamp: new Date().toLocaleString('fr-FR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+        
+        // Add to orders history
+        setOrders(prevOrders => [...prevOrders, orderForHistory]);
+        
+        // Update order status in activeOrders
+        setActiveOrders(activeOrders.map(order => 
+            order.id === activeOrderId
+                ? { ...order, status: 'in_progress' }
+                : order
+        ));
+        
+        // Generate kitchen receipt
+        generateKitchenReceipt({
+            ...currentOrder,
+            items: cart
+        });
+        
+        // Show success message
+        showAlert('Commande envoyée à la cuisine avec succès!', 'Succès');
+        
+        // Start a new order
+        handleNewOrder();
     };
 
     return (
@@ -1720,6 +1846,69 @@ const PosIndex = ({ auth }) => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Orders Button */}
+                        <div className="bg-white border-b shadow-sm">
+                            <button
+                                onClick={() => setShowOrders(true)}
+                                className="w-full p-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-yellow-100 p-1 rounded">
+                                        <ClipboardDocumentIcon className="h-4 w-4 text-yellow-700" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700">Commandes en cours</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">{orders.filter(o => o.status === 'in_progress').length} commandes</span>
+                                    <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Orders Modal */}
+                        {showOrders && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-md">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Commandes en cours</h3>
+                                        <button
+                                            onClick={() => setShowOrders(false)}
+                                            className="text-gray-400 hover:text-gray-500"
+                                        >
+                                            <XMarkIcon className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {orders.filter(order => order.status === 'in_progress').map(order => (
+                                            <div
+                                                key={order.id}
+                                                onClick={() => {
+                                                    switchToOrder(order.id);
+                                                    setShowOrders(false);
+                                                }}
+                                                className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-yellow-200 p-2 rounded">
+                                                        <ClipboardDocumentIcon className="h-5 w-5 text-yellow-700" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-yellow-800">
+                                                            {order.type === 'eat_in' ? `Table ${order.table_number}` : order.type}
+                                                        </div>
+                                                        <div className="text-xs text-yellow-600">
+                                                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Cart Items - More compact display */}
                         <div className="flex-1 overflow-auto px-2 py-2">

@@ -9,7 +9,7 @@ const Receipt = () => {
             
             // Create a new PDF with 7cm width (approximately 198.45 points)
             const width = 198.45; // 7cm in points
-            const height = 800; // Increased height to prevent overflow
+            const height = 250.45; // Increased height to prevent overflow
             
             const doc = new jsPDF({
                 orientation: 'portrait',
@@ -22,6 +22,126 @@ const Receipt = () => {
             const margin = 15; // Keep same margins
             const lineHeight = 15; // Increased line height to prevent text overlap
 
+            // Different header for kitchen tickets
+            if (order.isKitchenTicket) {
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(0, 0, 0);
+                doc.text(order.header || 'TICKET DE CUISINE', pageWidth / 2, y, { align: 'center' });
+                
+                y += lineHeight + 5;
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`Commande #: ${order.id}`, margin, y);
+                
+                y += lineHeight;
+                const orderType = order.type === 'eat_in' ? 'Sur place' : 
+                                order.type === 'takeaway' ? 'À emporter' : 
+                                order.type === 'delivery' ? 'Livraison' : order.type;
+                doc.text(`Type: ${orderType}`, margin, y);
+                
+                if (order.table_number) {
+                    const tableWidth = doc.getTextWidth(`Table: ${order.table_number}`);
+                    doc.text(`Table: ${order.table_number}`, pageWidth - margin - tableWidth, y);
+                }
+                
+                y += lineHeight;
+                doc.text(`Date: ${order.timestamp}`, margin, y);
+                
+                if (order.notes) {
+                    y += lineHeight;
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Notes:', margin, y);
+                    y += lineHeight;
+                    doc.setFont('helvetica', 'normal');
+                    // Split notes into multiple lines if needed
+                    const notesLines = doc.splitTextToSize(order.notes, pageWidth - 2 * margin);
+                    notesLines.forEach(line => {
+                        doc.text(line, margin, y);
+                        y += lineHeight;
+                    });
+                }
+
+                // Divider
+                y += lineHeight;
+                doc.setDrawColor(0, 0, 0);
+                doc.line(margin, y, pageWidth - margin, y);
+                y += lineHeight;
+
+                // Items Table Header
+                doc.setFont('helvetica', 'bold');
+                doc.setFillColor(0, 0, 0);
+                doc.setTextColor(255, 255, 255);
+                doc.rect(margin, y - 10, pageWidth - (2 * margin), 15, 'F');
+                
+                const colPositions = [
+                    margin + 2,                                 // Item start
+                    margin + (pageWidth - 2 * margin) * 0.55,   // Qty start
+                    margin + (pageWidth - 2 * margin) * 0.70    // Notes start
+                ];
+                
+                doc.setFontSize(8);
+                doc.text('Article', colPositions[0], y);
+                doc.text('Qté', colPositions[1], y);
+                doc.text('Notes', colPositions[2], y);
+
+                // Items Table Body
+                y += lineHeight;
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(0, 0, 0);
+                
+                if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach((item, index) => {
+                        if (index > 0) {
+                            doc.setDrawColor(200, 200, 200);
+                            doc.line(margin, y - 5, pageWidth - margin, y - 5);
+                            y += 2;
+                        }
+                        
+                        // Item name and quantity
+                        doc.text(`${item.quantity}x ${item.name}`, colPositions[0], y);
+                        
+                        // Customizations
+                        if (item.customizations) {
+                            const customizations = Object.entries(item.customizations.options || {})
+                                .map(([category, selection]) => {
+                                    if (Array.isArray(selection)) {
+                                        return selection.map(opt => `${opt.name || opt}`).join(', ');
+                                    }
+                                    return `${selection.name || selection}`;
+                                })
+                                .join(' | ');
+                            
+                            if (customizations) {
+                                y += lineHeight;
+                                doc.setFontSize(7);
+                                doc.text(customizations, colPositions[0], y);
+                            }
+                            
+                            if (item.customizations.instructions) {
+                                y += lineHeight;
+                                doc.setFontStyle('italic');
+                                doc.text(item.customizations.instructions, colPositions[0], y);
+                                doc.setFontStyle('normal');
+                            }
+                        }
+                        
+                        y += lineHeight + 2;
+                    });
+                }
+
+                // Footer
+                y = doc.internal.pageSize.getHeight() - 15;
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'bold');
+                doc.text(order.footer || 'Merci de préparer cette commande', pageWidth / 2, y, { align: 'center' });
+
+                // Save the PDF
+                doc.save(`kitchen-ticket-${order.id}.pdf`);
+                return;
+            }
+
+            // Original customer receipt code below
             // Header
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
