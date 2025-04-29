@@ -22,7 +22,8 @@ import {
     ClockIcon,
     XMarkIcon,
     ArrowUpTrayIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    QueueListIcon
 } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
 
@@ -1147,6 +1148,7 @@ const PosIndex = ({ auth }) => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [ordersReadyForPayment, setOrdersReadyForPayment] = useState({});
     const [showOrders, setShowOrders] = useState(false);
+    const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
