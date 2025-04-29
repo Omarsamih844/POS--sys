@@ -30,9 +30,9 @@ const Receipt = () => {
             console.log("Actual page width:", pageWidth);
             
             // Center the store name
-            doc.text('BIM STORES', pageWidth / 2, y, { align: 'center' });
+            doc.text('Restaurant', pageWidth / 2, y, { align: 'center' });
             y += lineHeight;
-            doc.text('3 Rue Ibnou Khairane', pageWidth / 2, y, { align: 'center' });
+            doc.text('X XXX XXXXXX XXXXXX', pageWidth / 2, y, { align: 'center' });
             y += lineHeight;
             doc.text('CASABLANCA', pageWidth / 2, y, { align: 'center' });
             
@@ -58,7 +58,6 @@ const Receipt = () => {
             }
             
             doc.text(ticketNum, pageWidth - margin - doc.getTextWidth(ticketNum), y);
-            
             // Draw a line
             y += 5;
             doc.line(margin, y, pageWidth - margin, y);
@@ -127,22 +126,38 @@ const Receipt = () => {
             doc.line(margin, y, pageWidth - margin, y);
             y += 8;
             
-            // Payment - safely handle potentially missing payment object
-            doc.text('ESPECES', margin, y);
-            let paymentAmount = 0;
+            // Payment method
             try {
-                paymentAmount = order.payment && order.payment.amount ? order.payment.amount : 0;
-            } catch (paymentError) {
-                console.error("Error processing payment amount:", paymentError);
+                const paymentMethod = order.payment && order.payment.method ? order.payment.method : 'cash';
+                const methodText = paymentMethod === 'card' ? 'CARTE BANCAIRE' : 'ESPECES';
+                doc.text(methodText, margin, y);
+                
+                if (paymentMethod === 'cash') {
+                    // Add payment amount and change for cash payments
+                    let paymentAmount = 0;
+                    try {
+                        paymentAmount = order.payment && order.payment.details && order.payment.details.amount ? order.payment.details.amount : 0;
+                    } catch (paymentError) {
+                        console.error("Error processing payment amount:", paymentError);
+                    }
+                    
+                    const paidText = `${paymentAmount.toFixed(2)}`;
+                    doc.text(paidText, pageWidth - margin - doc.getTextWidth(paidText), y);
+                    
+                    y += lineHeight;
+                    doc.text('RENDU', margin, y);
+                    const changeText = `${Math.max(0, paymentAmount - (total + 0.15)).toFixed(2)}`;
+                    doc.text(changeText, pageWidth - margin - doc.getTextWidth(changeText), y);
+                } else {
+                    // For card payment, just show the total amount
+                    doc.text(ttcText, pageWidth - margin - doc.getTextWidth(ttcText), y);
+                }
+            } catch (methodError) {
+                console.error("Error processing payment method:", methodError);
+                // Fallback to just showing cash
+                doc.text('ESPECES', margin, y);
+                doc.text(ttcText, pageWidth - margin - doc.getTextWidth(ttcText), y);
             }
-            
-            const paidText = `${paymentAmount.toFixed(2)}`;
-            doc.text(paidText, pageWidth - margin - doc.getTextWidth(paidText), y);
-            
-            y += lineHeight;
-            doc.text('RENDU', margin, y);
-            const changeText = `${Math.max(0, paymentAmount - (total + 0.15)).toFixed(2)}`;
-            doc.text(changeText, pageWidth - margin - doc.getTextWidth(changeText), y);
             
             // Draw a line
             y += 5;
@@ -166,6 +181,13 @@ const Receipt = () => {
             y += lineHeight;
             
             doc.text('ID FISC:1108770', margin, y);
+            y += lineHeight * 2;
+            
+            // Ajout du numéro de série de commande en bas du ticket
+            const orderNumber = (order.id || '').toString().replace(/[^\d]/g, '').padStart(4, '0');
+            doc.setFontSize(10);
+            doc.text(`N° COMMANDE: ${orderNumber}`, pageWidth / 2, y, { align: 'center' });
+            doc.setFontSize(8);
             
             // Instead of saving, open the PDF in a new tab
             console.log("Opening PDF in a new tab");
