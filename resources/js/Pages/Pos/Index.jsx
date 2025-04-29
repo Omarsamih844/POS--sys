@@ -26,6 +26,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
 
+
 // ActiveOrdersModal Component
 const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
     const pendingOrders = activeOrders.filter(order => order.status === 'pending');
@@ -1943,6 +1944,17 @@ const PosIndex = ({ auth }) => {
                                     <span>Total:</span>
                                     <span className="text-base">{total.toFixed(2)} MAD</span>
                                 </div>
+                                {activeOrderId && (
+                                    <button 
+                                        onClick={() => cancelOrder(activeOrderId)}
+                                        className="flex items-center gap-1 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-full shadow text-red-700 font-semibold text-xs transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <span>Annuler</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -2593,6 +2605,12 @@ const PosIndex = ({ auth }) => {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => openOrderDetails(order)}
+                                                                    className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                >
+                                                                    Détails
+                                                                </button>
                                                                 {order.status === 'pending' && (
                                                                     <>
                                                                         <button 
@@ -2669,6 +2687,12 @@ const PosIndex = ({ auth }) => {
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                                 <div className="flex gap-2">
                                                                     <button 
+                                                                        onClick={() => openOrderDetails(order)}
+                                                                        className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                    >
+                                                                        Détails
+                                                                    </button>
+                                                                    <button 
                                                                         onClick={() => {
                                                                             switchToOrder(order.id);
                                                                             setShowOrderHistory(false);
@@ -2728,15 +2752,23 @@ const PosIndex = ({ auth }) => {
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{order.total.toFixed(2)} MAD</td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                                <button 
-                                                                    onClick={() => {
-                                                                        const receiptGenerator = Receipt();
-                                                                        receiptGenerator.generateReceipt(order);
-                                                                    }}
-                                                                    className="px-2 py-1 bg-green-600 text-white rounded"
-                                                                >
-                                                                    Imprimer
-                                                                </button>
+                                                                <div className="flex gap-2">
+                                                                    <button 
+                                                                        onClick={() => openOrderDetails(order)}
+                                                                        className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                    >
+                                                                        Détails
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const receiptGenerator = Receipt();
+                                                                            receiptGenerator.generateReceipt(order);
+                                                                        }}
+                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                    >
+                                                                        Imprimer
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))
@@ -2764,6 +2796,7 @@ const PosIndex = ({ auth }) => {
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
@@ -2779,12 +2812,20 @@ const PosIndex = ({ auth }) => {
                                                                 {order.table_number && ` - Table ${order.table_number}`}
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{order.total.toFixed(2)} MAD</td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                                <button 
+                                                                    onClick={() => openOrderDetails(order)}
+                                                                    className="px-2 py-1 bg-gray-600 text-white rounded"
+                                                                >
+                                                                    Détails
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     ))
                                                 }
                                                 {[...activeOrders, ...orders].filter(order => order.status === 'cancelled').length === 0 && (
                                                     <tr>
-                                                        <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">Aucune commande annulée</td>
+                                                        <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">Aucune commande annulée</td>
                                                     </tr>
                                                 )}
                                             </tbody>
@@ -2891,6 +2932,11 @@ const PosIndex = ({ auth }) => {
                 activeOrders={activeOrders}
                 activeOrderId={activeOrderId}
                 onOrderSelect={switchToOrder}
+            />
+            <OrderDetailsModal
+                isOpen={showOrderDetailsModal}
+                onClose={() => setShowOrderDetailsModal(false)}
+                order={selectedOrderDetails}
             />
         </>
     );
