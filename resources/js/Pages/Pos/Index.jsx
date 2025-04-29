@@ -1127,6 +1127,8 @@ const PosIndex = ({ auth }) => {
     const [showTableOccupancyModal, setShowTableOccupancyModal] = useState(false);
     const [selectedTableId, setSelectedTableId] = useState(null);
     const [tableOccupancies, setTableOccupancies] = useState({});
+    const [tableStartTimes, setTableStartTimes] = useState({});
+    const [tableTimers, setTableTimers] = useState({});
     const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
     const [tables, setTables] = useState([
         { id: '1', status: 'available' },
@@ -1166,6 +1168,43 @@ const PosIndex = ({ auth }) => {
         calculateTotals();
         updateCounts();
     }, [cart, orderType]);
+
+    // Set up a timer to update the elapsed time for each table
+    useEffect(() => {
+        // Function to update timer displays
+        const updateTimers = () => {
+            const now = new Date().getTime();
+            const updated = {};
+            
+            // For each table with a start time, calculate elapsed time
+            Object.keys(tableStartTimes).forEach(tableId => {
+                if (tableStartTimes[tableId]) {
+                    const startTime = tableStartTimes[tableId];
+                    const elapsedMs = now - startTime;
+                    
+                    // Format the time as mm:ss or hh:mm:ss if over an hour
+                    const seconds = Math.floor((elapsedMs / 1000) % 60);
+                    const minutes = Math.floor((elapsedMs / (1000 * 60)) % 60);
+                    const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                    
+                    if (hours > 0) {
+                        updated[tableId] = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        updated[tableId] = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }
+            });
+            
+            setTableTimers(updated);
+        };
+        
+        // Update immediately and then every second
+        updateTimers();
+        const timerId = setInterval(updateTimers, 1000);
+        
+        // Clean up interval on unmount
+        return () => clearInterval(timerId);
+    }, [tableStartTimes]);
 
     const updateCounts = () => {
         const foodItems = cart.filter(item => {
@@ -1490,6 +1529,55 @@ const PosIndex = ({ auth }) => {
             setSelectedProduct(null);
             setShowPaymentModal(false);
             
+            // If it was an eat_in order, clear the table's timer
+            if (finalOrder.type === 'eat_in' && finalOrder.table_number) {
+                // Calculate the usage time for the table
+                const startTime = tableStartTimes[finalOrder.table_number];
+                if (startTime) {
+                    const endTime = new Date().getTime();
+                    const elapsedMs = endTime - startTime;
+                    
+                    // Format the time for display and store in order
+                    const seconds = Math.floor((elapsedMs / 1000) % 60);
+                    const minutes = Math.floor((elapsedMs / (1000 * 60)) % 60);
+                    const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                    
+                    let formattedTime;
+                    if (hours > 0) {
+                        formattedTime = `${hours}h ${minutes}m ${seconds}s`;
+                    } else {
+                        formattedTime = `${minutes}m ${seconds}s`;
+                    }
+                    
+                    // Store both formatted and raw time for flexibility
+                    finalOrder.tableUsage = {
+                        formatted: formattedTime,
+                        raw: {
+                            hours,
+                            minutes,
+                            seconds,
+                            totalSeconds: Math.floor(elapsedMs / 1000)
+                        },
+                        startTime,
+                        endTime
+                    };
+                }
+                
+                // Remove the table start time
+                setTableStartTimes(prev => {
+                    const updated = { ...prev };
+                    delete updated[finalOrder.table_number];
+                    return updated;
+                });
+                
+                // Remove the table occupancy
+                setTableOccupancies(prev => {
+                    const updated = { ...prev };
+                    delete updated[finalOrder.table_number];
+                    return updated;
+                });
+            }
+            
             // Show success message
             showAlert('Paiement réussi!', 'Succès');
 
@@ -1689,6 +1777,8 @@ const PosIndex = ({ auth }) => {
 
     // Add a new function to handle table occupancy
     const handleTableOccupancySave = (tableId, numberOfPeople, cancelOrder = false) => {
+        setShowTableOccupancyModal(false);
+
         if (cancelOrder) {
             // Cancel the order for this table
             const orderToCancel = activeOrders.find(order => 
@@ -1696,194 +1786,98 @@ const PosIndex = ({ auth }) => {
             );
             
             if (orderToCancel) {
-                setActiveOrders(activeOrders.map(order => 
-                    order.id === orderToCancel.id
-                        ? { ...order, status: 'cancelled' } 
-                        : order
-                ));
-                
-                // If cancelling the active order, clear the cart
-                if (orderToCancel.id === activeOrderId) {
-                    setCart([]);
-                    setActiveOrderId(null);
-                }
+                cancelOrder(orderToCancel.id);
             }
             
-            // Update table occupancies
+            // Update the tableOccupancies
             const updatedOccupancies = { ...tableOccupancies };
             delete updatedOccupancies[tableId];
             setTableOccupancies(updatedOccupancies);
             
+            // Remove the table start time and timer
+            const updatedStartTimes = { ...tableStartTimes };
+            delete updatedStartTimes[tableId];
+            setTableStartTimes(updatedStartTimes);
+            
             return;
         }
-        
-        // Store the number of people for this table
+
+        // If setting number of people, update the tableOccupancies state
         setTableOccupancies({
             ...tableOccupancies,
             [tableId]: numberOfPeople
         });
         
-        if (isSelectedTableOccupied) {
-            // Update existing order with new number of people
-            const orderToUpdate = activeOrders.find(order => 
-                (order.status === 'pending' || order.status === 'in_progress') && order.table_number === tableId
-            );
+        // Set the start time for the table if not already set
+        if (!tableStartTimes[tableId]) {
+            setTableStartTimes({
+                ...tableStartTimes,
+                [tableId]: new Date().getTime()
+            });
+        }
+
+        if (tableNumber === tableId) {
+            // Already selected this table, no need to update
+            return;
+        }
+
+        // Update existing order with new number of people
+        const orderToUpdate = activeOrders.find(order => 
+            order.status === 'pending' && order.table_number === tableId
+        );
+        
+        if (orderToUpdate) {
+            // If we have an order for this table, update it
+            setActiveOrders(activeOrders.map(order =>
+                order.id === orderToUpdate.id
+                    ? { ...order, numberOfPeople: numberOfPeople }
+                    : order
+            ));
             
-            if (orderToUpdate) {
-                setActiveOrders(activeOrders.map(order => 
-                    order.id === orderToUpdate.id
-                        ? { ...order, numberOfPeople: numberOfPeople } 
-                        : order
-                )); 
-                // If updating the active order, update the state
-                if (orderToUpdate.id === activeOrderId) {
-                    // Just update the number of people in the current order
-                }
-            }
-        } else {
+            // Switch to this order
+            switchToOrder(orderToUpdate.id);
+        } else if (activeOrderId) {
             // We know there's an active order because of the check in handleTableSelect
-            // Just update the current active order with the table number and people
+            // Update the table number for the active order
             setTableNumber(tableId);
-            setOrderType('eat_in');
             
-            // Update the current active order with the table number and people
-            saveCurrentOrderState();
-            
-            setActiveOrders(activeOrders.map(order => 
+            // Also update in the activeOrders array
+            setActiveOrders(activeOrders.map(order =>
                 order.id === activeOrderId
-                    ? { 
-                        ...order, 
-                        type: 'eat_in',
-                        table_number: tableId,
-                        numberOfPeople: numberOfPeople
-                    }
+                    ? { ...order, table_number: tableId, type: 'eat_in', numberOfPeople: numberOfPeople }
                     : order
             ));
         }
-        
-        // Switch to the Caisse tab
-        setActiveTab('caisse');
     };
 
-    const generateKitchenReceipt = (order) => {
-        // Create a new PDF document with 7cm width
-        const doc = new jsPDF({
-            unit: 'cm',
-            format: [7, 'auto']
-        });
-
-        // Get the current date and time
-        const now = new Date();
-        const dateStr = now.toLocaleDateString('fr-FR');
-        const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
-        // Set initial position
-        let y = 0.5;
-
-        // Add restaurant name
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(16);
-        doc.text('BURGER HOUSE', 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add ticket type
-        doc.setFontSize(14);
-        doc.text('TICKET DE CUISINE', 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add date and time
-        doc.setFontSize(10);
-        doc.text(`${dateStr} - ${timeStr}`, 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add separator line
-        doc.setDrawColor(0);
-        doc.line(0.5, y, 6.5, y);
-        y += 0.5;
-
-        // Add table info
-        doc.setFontSize(14);
-        doc.text(`TABLE: ${order.table_number || '--'}`, 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add separator line
-        doc.line(0.5, y, 6.5, y);
-        y += 0.5;
-
-        // Add items
-        doc.setFontSize(12);
-        order.items.forEach(item => {
-            // Check if we need a new page
-            if (y > 25) {
-                doc.addPage();
-                y = 0.5;
+    // Add function to open order details modal
+    const openOrderDetails = (order) => {
+        // Ensure the order has properly formatted table usage if it exists but isn't fully formatted
+        if (order.type === 'eat_in' && order.tableUsage) {
+            // If tableUsage exists but doesn't have the formatted property, format it
+            if (!order.tableUsage.formatted && order.tableUsage.raw) {
+                const { hours, minutes, seconds } = order.tableUsage.raw;
+                
+                if (hours > 0) {
+                    order.tableUsage.formatted = `${hours}h ${minutes}m ${seconds}s`;
+                } else {
+                    order.tableUsage.formatted = `${minutes}m ${seconds}s`;
+                }
             }
-
-            // Add item quantity and name
-            doc.setFont('helvetica', 'bold');
-            doc.text(`${item.quantity}x`, 0.5, y);
-            doc.setFont('helvetica', 'normal');
-            doc.text(item.name, 1.5, y);
-            y += 0.6;
-        });
-
-        // Add separator line
-        y += 0.3;
-        doc.line(0.5, y, 6.5, y);
-        y += 0.5;
-
-        // Add footer
-        doc.setFontSize(10);
-        doc.text('Fin de commande', 3.5, y, { align: 'center' });
-        y += 0.5;
-        doc.text('Merci!', 3.5, y, { align: 'center' });
-
-        // Save the PDF
-        doc.save(`kitchen-ticket-${order.id}.pdf`);
-    };
-
-    const handleSendToKitchen = () => {
-        if (!activeOrderId || cart.length === 0) return;
+            // If tableUsage exists but only as a string or number, convert it to the proper structure
+            else if (typeof order.tableUsage === 'string' || typeof order.tableUsage === 'number') {
+                const oldValue = order.tableUsage;
+                order.tableUsage = {
+                    formatted: typeof oldValue === 'string' ? oldValue : `${Math.floor(oldValue / 60)}m ${oldValue % 60}s`,
+                    raw: {
+                        totalSeconds: typeof oldValue === 'number' ? oldValue : 0
+                    }
+                };
+            }
+        }
         
-        // Find the current order
-        const currentOrder = activeOrders.find(order => order.id === activeOrderId);
-        if (!currentOrder) return;
-        
-        // Create a copy of the order for history
-        const orderForHistory = {
-            ...currentOrder,
-            items: cart,
-            status: 'in_progress',
-            timestamp: new Date().toLocaleString('fr-FR', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            })
-        };
-        
-        // Add to orders history
-        setOrders(prevOrders => [...prevOrders, orderForHistory]);
-        
-        // Update order status in activeOrders
-        setActiveOrders(activeOrders.map(order => 
-            order.id === activeOrderId
-                ? { ...order, status: 'in_progress' }
-                : order
-        ));
-        
-        // Generate kitchen receipt
-        generateKitchenReceipt({
-            ...currentOrder,
-            items: cart
-        });
-        
-        // Show success message
-        showAlert('Commande envoyée à la cuisine avec succès!', 'Succès');
-        
-        // Start a new order
-        handleNewOrder();
+        setSelectedOrderDetails(order);
+        setShowOrderDetailsModal(true);
     };
 
     return (
@@ -2357,6 +2351,19 @@ const PosIndex = ({ auth }) => {
                                                                         {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
                                                                     </div>
                                                                 )}
+                                                                
+                                                                {/* Timer display */}
+                                                                {table.status === 'occupied' && tableTimers[table.id] && (
+                                                                    <div className="mt-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold shadow flex items-center">
+                                                                        <span className="mr-1">⏱️</span> {tableTimers[table.id]}
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Round Table Chairs */}
+                                                                <div className="absolute -top-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-12 -right-6 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute -bottom-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-12 -left-6 w-8 h-8 bg-blue-300 rounded-full"></div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -2383,6 +2390,13 @@ const PosIndex = ({ auth }) => {
                                                                 {table.status === 'occupied' && (
                                                                     <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
                                                                         {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Timer display */}
+                                                                {table.status === 'occupied' && tableTimers[table.id] && (
+                                                                    <div className="mt-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center">
+                                                                        <span className="mr-1">⏱️</span> {tableTimers[table.id]}
                                                                     </div>
                                                                 )}
                                                                 

@@ -136,6 +136,14 @@ const OrderDetailsModal = ({ isOpen, onClose, order }) => {
                                 {order.table_number && ` - Table ${order.table_number}`}
                             </p>
                         </div>
+                        {order.type === 'eat_in' && order.tableUsage && (
+                            <div>
+                                <h3 className="text-sm font-medium text-gray-500">Temps d'occupation</h3>
+                                <p className="font-medium flex items-center">
+                                    <span className="mr-1">⏱️</span> {order.tableUsage.formatted}
+                                </p>
+                            </div>
+                        )}
                         <div>
                             <h3 className="text-sm font-medium text-gray-500">Statut</h3>
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(order.status)}`}>
