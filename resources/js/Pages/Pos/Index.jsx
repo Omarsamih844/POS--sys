@@ -20,8 +20,11 @@ import {
     PlusIcon,
     ClipboardDocumentIcon,
     ClockIcon,
-    XMarkIcon
+    XMarkIcon,
+    ArrowUpTrayIcon,
+    ChevronRightIcon
 } from '@heroicons/react/24/solid';
+import { jsPDF } from 'jspdf';
 
 // Note: menuData is now defined in the PosIndex component to avoid ReferenceError
 
@@ -1057,6 +1060,8 @@ const PosIndex = ({ auth }) => {
     const [deleteTarget, setDeleteTarget] = useState(null); // { product_id, quantity }
     const [deleteQty, setDeleteQty] = useState(1);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [ordersReadyForPayment, setOrdersReadyForPayment] = useState({});
+    const [showOrders, setShowOrders] = useState(false);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1541,7 +1546,7 @@ const PosIndex = ({ auth }) => {
         
         // Mark tables with active orders as occupied
         activeOrders.forEach(order => {
-            if (order.status === 'pending' && order.table_number) {
+            if ((order.status === 'pending' || order.status === 'in_progress') && order.table_number) {
                 const tableIndex = updatedTables.findIndex(t => t.id === order.table_number);
                 if (tableIndex >= 0) {
                     updatedTables[tableIndex].status = 'occupied';
@@ -1603,7 +1608,7 @@ const PosIndex = ({ auth }) => {
         if (cancelOrder) {
             // Cancel the order for this table
             const orderToCancel = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
+                (order.status === 'pending' || order.status === 'in_progress') && order.table_number === tableId
             );
             
             if (orderToCancel) {
@@ -1637,7 +1642,7 @@ const PosIndex = ({ auth }) => {
         if (isSelectedTableOccupied) {
             // Update existing order with new number of people
             const orderToUpdate = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
+                (order.status === 'pending' || order.status === 'in_progress') && order.table_number === tableId
             );
             
             if (orderToUpdate) {
@@ -1675,6 +1680,147 @@ const PosIndex = ({ auth }) => {
         
         // Switch to the Caisse tab
         setActiveTab('caisse');
+    };
+
+    const generateKitchenReceipt = (order) => {
+        // Create a new PDF document with 7cm width
+        const doc = new jsPDF({
+            unit: 'mm',
+            format: [70, 'auto'] // 7cm width
+        });
+
+        // Get the current date and time
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('fr-FR');
+        const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+        // Set initial position
+        let y = 8;
+        const left = 5;
+        const right = 65;
+
+        // Header line
+        doc.setFontSize(10);
+        doc.text('Chaud', left, y);
+        doc.text(`Cmde ${order.id.substr(-2)}`, 25, y);
+        doc.text('Poste CAISSE', 45, y, { align: 'right' });
+        doc.text(timeStr, right, y, { align: 'right' });
+        y += 8;
+
+        // Table and Server info with larger fonts
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TABLE', left, y);
+        doc.setFontSize(24); // Large font for table number
+        doc.text(`${order.table_number || '--'}`, 30, y, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text('SERVEUR 1', right, y, { align: 'right' });
+        y += 8;
+
+        // Covers (number of people)
+        doc.setFont('helvetica', 'normal');
+        doc.text('Couverts', left, y);
+        doc.text(`${order.numberOfPeople || 1}`, 30, y);
+        y += 8;
+
+        // New order header
+        doc.setFont('helvetica', 'bold');
+        doc.text('Nouvelle commande', left, y);
+        doc.setFont('helvetica', 'normal');
+        y += 8;
+
+        // Add horizontal line
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.1);
+        doc.line(left, y - 2, right, y - 2);
+
+        // Filter main dishes and drinks
+        const mainDishes = order.items.filter(item => !/cafe|café|thé|the/i.test(item.name));
+        const drinks = order.items.filter(item => /cafe|café|thé|the/i.test(item.name));
+
+        // Main dishes with arrow
+        mainDishes.forEach(item => {
+            doc.setFontSize(12);
+            doc.text('➜', left, y);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`${item.quantity} ${item.name.toUpperCase()}`, left + 7, y);
+            doc.setFont('helvetica', 'normal');
+            
+            // Add light horizontal line after each item
+            y += 5;
+            doc.setDrawColor(230, 230, 230);
+            doc.setLineWidth(0.1);
+            doc.line(left, y, right, y);
+            y += 4;
+        });
+
+        // Drinks in italic
+        drinks.forEach(item => {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`${item.quantity} ${item.name}`, 15, y);
+            doc.setFont('helvetica', 'normal');
+            y += 6;
+        });
+
+        // Add separator line before footer
+        y += 3;
+        doc.setDrawColor(150, 150, 150);
+        doc.setLineWidth(0.3);
+        doc.line(left, y, right, y);
+        y += 7;
+
+        // Footer with "Fin commande" and date/time
+        doc.setFontSize(10);
+        doc.text('Fin commande', left, y);
+        doc.text(`${dateStr} ${timeStr}`, right, y, { align: 'right' });
+
+        // Save the PDF
+        doc.save(`kitchen-ticket-${order.id}.pdf`);
+    };
+
+    const handleSendToKitchen = () => {
+        if (!activeOrderId || cart.length === 0) return;
+        
+        // Find the current order
+        const currentOrder = activeOrders.find(order => order.id === activeOrderId);
+        if (!currentOrder) return;
+        
+        // Create a copy of the order for history
+        const orderForHistory = {
+            ...currentOrder,
+            items: cart,
+            status: 'in_progress',
+            timestamp: new Date().toLocaleString('fr-FR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        };
+        
+        // Add to orders history
+        setOrders(prevOrders => [...prevOrders, orderForHistory]);
+        
+        // Update order status in activeOrders
+        setActiveOrders(activeOrders.map(order => 
+            order.id === activeOrderId
+                ? { ...order, status: 'in_progress' }
+                : order
+        ));
+        
+        // Generate kitchen receipt
+        generateKitchenReceipt({
+            ...currentOrder,
+            items: cart
+        });
+        
+        // Show success message
+        showAlert('Commande envoyée à la cuisine avec succès!', 'Succès');
+        
+        // Start a new order
+        handleNewOrder();
     };
 
     return (
@@ -1728,6 +1874,69 @@ const PosIndex = ({ auth }) => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Orders Button */}
+                        <div className="bg-white border-b shadow-sm">
+                            <button
+                                onClick={() => setShowOrders(true)}
+                                className="w-full p-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-yellow-100 p-1 rounded">
+                                        <ClipboardDocumentIcon className="h-4 w-4 text-yellow-700" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700">Commandes en cours</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">{orders.filter(o => o.status === 'in_progress').length} commandes</span>
+                                    <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Orders Modal */}
+                        {showOrders && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-md">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Commandes en cours</h3>
+                                        <button
+                                            onClick={() => setShowOrders(false)}
+                                            className="text-gray-400 hover:text-gray-500"
+                                        >
+                                            <XMarkIcon className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {orders.filter(order => order.status === 'in_progress').map(order => (
+                                            <div
+                                                key={order.id}
+                                                onClick={() => {
+                                                    switchToOrder(order.id);
+                                                    setShowOrders(false);
+                                                }}
+                                                className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-yellow-200 p-2 rounded">
+                                                        <ClipboardDocumentIcon className="h-5 w-5 text-yellow-700" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-yellow-800">
+                                                            {order.type === 'eat_in' ? `Table ${order.table_number}` : order.type}
+                                                        </div>
+                                                        <div className="text-xs text-yellow-600">
+                                                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Cart Items - More compact display */}
                         <div className="flex-1 overflow-auto px-2 py-2">
@@ -1977,20 +2186,35 @@ const PosIndex = ({ auth }) => {
                             </div>
                         </div>
 
-                        {/* Bottom Navigation - Payment button */}
-                        <div className="p-2 bg-white border-t">
-                            <button
-                                onClick={() => setShowPaymentModal(true)}
-                                disabled={!activeOrderId || cart.length === 0}
-                                className={`w-full p-3 rounded-md transition-colors text-base font-medium h-8 flex items-center justify-center ${
-                                    !activeOrderId || cart.length === 0
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
-                                }`}
-                            >
-                                <BanknotesIcon className="h-5 w-5 mr-2" />
-                                Payer ({total.toFixed(2)} MAD)
-                            </button>
+                        {/* Bottom Navigation - Kitchen and Payment buttons */}
+                        <div className="p-2 bg-white border-t space-y-2">
+                            {activeOrderId && activeOrders.find(order => order.id === activeOrderId)?.status === 'in_progress' ? (
+                                <button
+                                    onClick={() => setShowPaymentModal(true)}
+                                    disabled={cart.length === 0}
+                                    className={`w-full p-3 rounded-md transition-colors text-base font-medium h-14 flex items-center justify-center ${
+                                        cart.length === 0
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
+                                    }`}
+                                >
+                                    <BanknotesIcon className="h-5 w-5 mr-2" />
+                                    Payer ({total.toFixed(2)} MAD)
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSendToKitchen}
+                                    disabled={!activeOrderId || cart.length === 0}
+                                    className={`w-full p-3 rounded-md transition-colors text-base font-medium h-14 flex items-center justify-center ${
+                                        !activeOrderId || cart.length === 0
+                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                            : 'bg-yellow-600 text-white hover:bg-yellow-700 shadow-md'
+                                    }`}
+                                >
+                                    <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                                    Envoyer en cuisine
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -2102,8 +2326,8 @@ const PosIndex = ({ auth }) => {
                                                                 
                                                                 {/* Show number of people if table is occupied */}
                                                                 {table.status === 'occupied' && (
-                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
-                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    <div className="mt-1 px-3 py-1.5 bg-white rounded-full text-sm font-bold shadow">
+                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'personne' : 'personnes'}
                                                                     </div>
                                                                 )}
                                                                 
