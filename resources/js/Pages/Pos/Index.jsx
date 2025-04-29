@@ -1828,6 +1828,17 @@ const PosIndex = ({ auth }) => {
                                     <span>Total:</span>
                                     <span className="text-base">{total.toFixed(2)} MAD</span>
                                 </div>
+                                {activeOrderId && (
+                                    <button 
+                                        onClick={() => cancelOrder(activeOrderId)}
+                                        className="flex items-center gap-1 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-full shadow text-red-700 font-semibold text-xs transition-colors"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        <span>Annuler</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
