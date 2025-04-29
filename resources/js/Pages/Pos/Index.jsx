@@ -2005,89 +2005,84 @@ const PosIndex = ({ auth }) => {
                                 </div>
                             ) : (
                                 <div className="space-y-2">
-                                    {cart.map((item, index) => {
-                                        const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
-                                        return (
-                                            <div 
-                                                key={index} 
-                                                onClick={() => {
-                                                    if (product) {
-                                                        setSelectedProduct(product);
-                                                        setStartNewInput(true);
-                                                    }
-                                                }}
-                                                className={`bg-white rounded-lg shadow p-2 flex justify-between items-center cursor-pointer transition-colors ${
-                                                    selectedProduct?.id === item.product_id ? 'bg-blue-100 border-2 border-blue-500 ring-2 ring-blue-300 pl-2' : ''
-                                                }`}
-                                            >
-                                                {/* Product Image */}
-                                                <img
-                                                    src={product?.image || 'https://via.placeholder.com/40'}
-                                                    alt={item.name}
-                                                    className="w-14 h-14 object-cover rounded-md mr-2 border border-gray-200"
-                                                />
-                                                <div className="flex-1 pr-2">
-                                                    <div className="font-medium text-sm">{item.name}</div>
-                                                    <div className="text-gray-600 text-xs">
-                                                        {formatPrice(item.unit_price || item.price)} x {item.quantity}
-                                                    </div>
-                                                    {item.notes && (
-                                                        <div className="text-xs text-gray-500 italic">
-                                                            Note: {item.notes}
-                                                        </div>
-                                                    )}
+                                    {cart.map((item, index) => (
+                                        <div 
+                                            key={index} 
+                                            onClick={() => {
+                                                const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
+                                                if (product) {
+                                                    setSelectedProduct(product);
+                                                    setStartNewInput(true);
+                                                }
+                                            }}
+                                            className={`bg-white rounded-lg shadow p-2 flex justify-between items-center cursor-pointer transition-colors
+                                                ${selectedProduct?.id === item.product_id 
+                                                    ? 'bg-blue-50 border-l-4 border-blue-500 pl-2 ring-2 ring-blue-200' 
+                                                    : 'hover:bg-gray-50'}
+                                            `}
+                                        >
+                                            <div className="flex-1 pr-2">
+                                                <div className="font-medium text-sm">{item.name}</div>
+                                                <div className="text-gray-600 text-xs">
+                                                    {formatPrice(item.unit_price || item.price)} x {item.quantity}
                                                 </div>
-                                                <div className="flex items-center space-x-1">
-                                                    <div className="font-bold text-gray-800 text-sm">
-                                                        {formatPrice((item.unit_price || item.price) * item.quantity)}
+                                                {item.notes && (
+                                                    <div className="text-xs text-gray-500 italic">
+                                                        Note: {item.notes}
                                                     </div>
-                                                    <div className="flex flex-col space-y-1">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (product) {
-                                                                    setSelectedProduct(product);
-                                                                    setShowCustomizeModal(true); // Open update modal
-                                                                }
-                                                            }}
-                                                            className="rounded hover:bg-gray-100 flex items-center justify-center w-10 h-10"
-                                                            style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                        >
-                                                            <PencilIcon className="h-7 w-7 text-blue-500" />
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (item.quantity > 1) {
-                                                                    setDeleteTarget({ product_id: item.product_id, quantity: item.quantity });
-                                                                    setDeleteQty(1);
-                                                                    setShowDeleteQtyModal(true);
-                                                                } else {
-                                                                    showConfirm(
-                                                                        "Êtes-vous sûr de vouloir supprimer ce produit du panier ?",
-                                                                        (confirmed) => {
-                                                                            if (confirmed) {
-                                                                                removeFromCart(item.product_id);
-                                                                                if (selectedProduct?.id === item.product_id) {
-                                                                                    setSelectedProduct(null);
-                                                                                }
+                                                )}
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                                <div className="font-bold text-gray-800 text-sm">
+                                                    {formatPrice((item.unit_price || item.price) * item.quantity)}
+                                                </div>
+                                                <div className="flex flex-col space-y-1">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
+                                                            if (product) {
+                                                                setSelectedProduct(product);
+                                                                setShowCustomizeModal(true); // Open update modal
+                                                            }
+                                                        }}
+                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
+                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
+                                                    >
+                                                        <PencilIcon className="h-5 w-5 text-blue-500" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (item.quantity > 1) {
+                                                                setDeleteTarget({ product_id: item.product_id, quantity: item.quantity });
+                                                                setDeleteQty(1);
+                                                                setShowDeleteQtyModal(true);
+                                                            } else {
+                                                                showConfirm(
+                                                                    "Êtes-vous sûr de vouloir supprimer ce produit du panier ?",
+                                                                    (confirmed) => {
+                                                                        if (confirmed) {
+                                                                            removeFromCart(item.product_id);
+                                                                            if (selectedProduct?.id === item.product_id) {
+                                                                                setSelectedProduct(null);
                                                                             }
-                                                                        },
-                                                                        "Confirmation"
-                                                                    );
-                                                                }
-                                                            }}
-                                                            className="rounded hover:bg-gray-100 flex items-center justify-center w-10 h-10"
-                                                            style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                            title="Supprimer"
-                                                        >
-                                                            <TrashIcon className="h-7 w-7 text-red-500" />
-                                                        </button>
-                                                    </div>
+                                                                        }
+                                                                    },
+                                                                    "Confirmation"
+                                                                );
+                                                            }
+                                                        }}
+                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
+                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
+                                                        title="Supprimer"
+                                                    >
+                                                        <TrashIcon className="h-5 w-5 text-red-500" />
+                                                    </button>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
+                                        </div>
+                                    ))}
                                 </div>
                             )}
                         </div>  
