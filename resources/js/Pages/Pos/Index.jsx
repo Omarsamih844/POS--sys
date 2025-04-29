@@ -126,7 +126,7 @@ const CategoryCards = ({ onCategorySelect, menuData }) => {
     };
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4">
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 p-4">
             {menuData.map(category => (
                 <div
                     key={category.id}
@@ -1475,7 +1475,6 @@ const PosIndex = ({ auth }) => {
                 return status;
         }
     };
-
     // Replace alert() function with a modal
     const showAlert = (message, title = 'Information') => {
         setAlertMessage(message);
@@ -1678,9 +1677,8 @@ const PosIndex = ({ auth }) => {
     };
 
     return (
-        <AuthenticatedLayout>
+        <>
             <Head title="Système de Caisse" />
-            
             <div className="min-h-screen bg-gray-100">
                 <Head title="Point of Sale" />
                 <div className="flex h-screen">
@@ -2566,7 +2564,6 @@ const PosIndex = ({ auth }) => {
                     </div>
                 </div>
             )}
-
             {/* AlertModal */}
             {showAlertModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2647,8 +2644,7 @@ const PosIndex = ({ auth }) => {
                     </div>
                 </div>
             )}
-        </AuthenticatedLayout>
+        </>
     );
 };
-
 export default PosIndex;
