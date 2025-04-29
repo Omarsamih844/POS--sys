@@ -19,7 +19,6 @@ return new class extends Migration
             $table->string('image_categorie')->nullable();
             $table->string('couleur_categorie')->nullable();
             $table->boolean('categorie_est_activee')->default(false);
-
             $table->unsignedBigInteger('id_mesure')->nullable();
             $table->foreign('id_mesure')->references('id_mesure')->on('mesures')->onDelete('set null')->onUpdate('cascade');
 

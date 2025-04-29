@@ -508,7 +508,7 @@ const CustomizeModal = ({ isOpen, onClose, onApply, product }) => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Customize {product.name}</h2>
+                    <h2 className="text-xl font-semibold">Personnaliser {product.name}</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -519,16 +519,73 @@ const CustomizeModal = ({ isOpen, onClose, onApply, product }) => {
                 <div className="space-y-6">
                     {options.map((category, index) => (
                         <div key={index} className="space-y-3">
-                            <h3 className="font-medium text-gray-900">{category.name}</h3>
+                            <h3 className="font-medium text-gray-900">{
+                                // French translations for category names
+                                category.name === 'Spice Level' ? 'Niveau d\'Épices' :
+                                category.name === 'Add Extra' ? 'Ajouter un supplément' :
+                                category.name === 'Remove' ? 'Retirer' :
+                                category.name === 'Cooking Preference' ? 'Cuisson' :
+                                category.name === 'Size' ? 'Taille' :
+                                category.name === 'Ice Level' ? 'Niveau de glace' :
+                                category.name === 'Add-ons' ? 'Suppléments' :
+                                category.name === 'Topping' ? 'Garniture' :
+                                category.name === 'Flavor' ? 'Saveur' :
+                                category.name // fallback
+                            }</h3>
                             <div className="grid grid-cols-2 gap-2">
                                 {category.options.map((option, optIndex) => {
-                                    const optionName = typeof option === 'object' ? option.name : option;
+                                    // French translations for option names
+                                    let optionName = typeof option === 'object' ? option.name : option;
+                                    optionName =
+                                        optionName === 'Mild' ? 'Doux' :
+                                        optionName === 'Medium' ? 'Moyen' :
+                                        optionName === 'Hot' ? 'Épicé' :
+                                        optionName === 'Extra Hot' ? 'Très Épicé' :
+                                        optionName === 'Extra Cheese' ? 'Fromage supplémentaire' :
+                                        optionName === 'Extra Chicken' ? 'Poulet supplémentaire' :
+                                        optionName === 'Extra Sauce' ? 'Sauce supplémentaire' :
+                                        optionName === 'Onions' ? 'Oignons' :
+                                        optionName === 'Tomatoes' ? 'Tomates' :
+                                        optionName === 'Lettuce' ? 'Laitue' :
+                                        optionName === 'Mayo' ? 'Mayonnaise' :
+                                        optionName === 'Rare' ? 'Saignant' :
+                                        optionName === 'Medium Rare' ? 'À point saignant' :
+                                        optionName === 'Medium Well' ? 'À point bien cuit' :
+                                        optionName === 'Well Done' ? 'Bien cuit' :
+                                        optionName === 'Extra Bacon' ? 'Bacon supplémentaire' :
+                                        optionName === 'Extra Patty' ? 'Steak supplémentaire' :
+                                        optionName === 'Pickles' ? 'Cornichons' :
+                                        optionName === 'Extra Fish' ? 'Poisson supplémentaire' :
+                                        optionName === 'Extra Tartar Sauce' ? 'Sauce tartare supplémentaire' :
+                                        optionName === 'No Ice' ? 'Sans glace' :
+                                        optionName === 'Light Ice' ? 'Peu de glace' :
+                                        optionName === 'Regular Ice' ? 'Glace normale' :
+                                        optionName === 'Extra Ice' ? 'Beaucoup de glace' :
+                                        optionName === 'Extra Fizz' ? 'Bulles supplémentaires' :
+                                        optionName === 'Extra Whipped Cream' ? 'Crème fouettée supplémentaire' :
+                                        optionName === 'Extra Strawberries' ? 'Fraises supplémentaires' :
+                                        optionName === 'Extra Ice Cream' ? 'Glace supplémentaire' :
+                                        optionName === 'No Topping' ? 'Sans garniture' :
+                                        optionName === 'Strawberry Sauce' ? 'Sauce à la fraise' :
+                                        optionName === 'Chocolate Sauce' ? 'Sauce au chocolat' :
+                                        optionName === 'Caramel Sauce' ? 'Sauce caramel' :
+                                        optionName === 'Extra Oreos' ? 'Oreos supplémentaires' :
+                                        optionName === 'Extra Banana' ? 'Banane supplémentaire' :
+                                        optionName === 'Extra Chocolate' ? 'Chocolat supplémentaire' :
+                                        optionName === 'Extra Shot' ? 'Dose supplémentaire' :
+                                        optionName === 'Whipped Cream' ? 'Crème fouettée' :
+                                        optionName === 'Caramel Syrup' ? 'Sirop de caramel' :
+                                        optionName === 'Lemon' ? 'Citron' :
+                                        optionName === 'Peach' ? 'Pêche' :
+                                        optionName === 'Raspberry' ? 'Framboise' :
+                                        optionName === 'Special Sauce' ? 'Sauce spéciale' :
+                                        optionName;
                                     const isSelected = category.type === 'single'
                                         ? (typeof selectedOptions[category.name] === 'object' 
-                                            ? selectedOptions[category.name].name === optionName
+                                            ? selectedOptions[category.name].name === (typeof option === 'object' ? option.name : option)
                                             : selectedOptions[category.name] === option)
                                         : (selectedOptions[category.name] || []).some(opt => 
-                                            (typeof opt === 'object' ? opt.name : opt) === optionName);
+                                            (typeof opt === 'object' ? opt.name : opt) === (typeof option === 'object' ? option.name : option));
 
                                     return (
                                         <button
@@ -536,8 +593,8 @@ const CustomizeModal = ({ isOpen, onClose, onApply, product }) => {
                                             onClick={() => handleOptionSelect(category, option)}
                                             className={`p-2 text-sm rounded-lg border ${
                                                 isSelected
-                                                    ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                                    : 'border-gray-200 hover:border-purple-300'
+                                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                    : 'border-gray-200 hover:border-blue-300'
                                             }`}
                                         >
                                             <div className="flex justify-between items-center">
@@ -557,14 +614,14 @@ const CustomizeModal = ({ isOpen, onClose, onApply, product }) => {
 
                     <div className="border-t pt-4">
                         <div className="flex justify-between text-sm mb-4">
-                            <span className="font-medium">Extra Charges:</span>
+                            <span className="font-medium">Frais supplémentaires :</span>
                             <span className="text-green-600 font-medium">{calculateExtraCharge()} DH</span>
                         </div>
                         <button
                             onClick={handleApply}
-                            className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                            Apply Customization
+                            Appliquer la personnalisation
                         </button>
                     </div>
                 </div>
