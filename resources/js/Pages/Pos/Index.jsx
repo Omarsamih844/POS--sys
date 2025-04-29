@@ -1767,8 +1767,8 @@ const PosIndex = ({ auth }) => {
     const generateKitchenReceipt = (order) => {
         // Create a new PDF document with 7cm width
         const doc = new jsPDF({
-            unit: 'cm',
-            format: [7, 'auto']
+            unit: 'mm',
+            format: [70, 'auto'] // 7cm width
         });
 
         // Get the current date and time
@@ -1777,65 +1777,85 @@ const PosIndex = ({ auth }) => {
         const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
         // Set initial position
-        let y = 0.5;
+        let y = 8;
+        const left = 5;
+        const right = 65;
 
-        // Add restaurant name
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(16);
-        doc.text('BURGER HOUSE', 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add ticket type
-        doc.setFontSize(14);
-        doc.text('TICKET DE CUISINE', 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add date and time
+        // Header line
         doc.setFontSize(10);
-        doc.text(`${dateStr} - ${timeStr}`, 3.5, y, { align: 'center' });
-        y += 0.8;
+        doc.text('Chaud', left, y);
+        doc.text(`Cmde ${order.id.substr(-2)}`, 25, y);
+        doc.text('Poste CAISSE', 45, y, { align: 'right' });
+        doc.text(timeStr, right, y, { align: 'right' });
+        y += 8;
 
-        // Add separator line
-        doc.setDrawColor(0);
-        doc.line(0.5, y, 6.5, y);
-        y += 0.5;
-
-        // Add table info
-        doc.setFontSize(14);
-        doc.text(`TABLE: ${order.table_number || '--'}`, 3.5, y, { align: 'center' });
-        y += 0.8;
-
-        // Add separator line
-        doc.line(0.5, y, 6.5, y);
-        y += 0.5;
-
-        // Add items
+        // Table and Server info with larger fonts
         doc.setFontSize(12);
-        order.items.forEach(item => {
-            // Check if we need a new page
-            if (y > 25) {
-                doc.addPage();
-                y = 0.5;
-            }
+        doc.setFont('helvetica', 'bold');
+        doc.text('TABLE', left, y);
+        doc.setFontSize(24); // Large font for table number
+        doc.text(`${order.table_number || '--'}`, 30, y, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text('SERVEUR 1', right, y, { align: 'right' });
+        y += 8;
 
-            // Add item quantity and name
+        // Covers (number of people)
+        doc.setFont('helvetica', 'normal');
+        doc.text('Couverts', left, y);
+        doc.text(`${order.numberOfPeople || 1}`, 30, y);
+        y += 8;
+
+        // New order header
+        doc.setFont('helvetica', 'bold');
+        doc.text('Nouvelle commande', left, y);
+        doc.setFont('helvetica', 'normal');
+        y += 8;
+
+        // Add horizontal line
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.1);
+        doc.line(left, y - 2, right, y - 2);
+
+        // Filter main dishes and drinks
+        const mainDishes = order.items.filter(item => !/cafe|café|thé|the/i.test(item.name));
+        const drinks = order.items.filter(item => /cafe|café|thé|the/i.test(item.name));
+
+        // Main dishes with arrow
+        mainDishes.forEach(item => {
+            doc.setFontSize(12);
+            doc.text('➜', left, y);
             doc.setFont('helvetica', 'bold');
-            doc.text(`${item.quantity}x`, 0.5, y);
+            doc.text(`${item.quantity} ${item.name.toUpperCase()}`, left + 7, y);
             doc.setFont('helvetica', 'normal');
-            doc.text(item.name, 1.5, y);
-            y += 0.6;
+            
+            // Add light horizontal line after each item
+            y += 5;
+            doc.setDrawColor(230, 230, 230);
+            doc.setLineWidth(0.1);
+            doc.line(left, y, right, y);
+            y += 4;
         });
 
-        // Add separator line
-        y += 0.3;
-        doc.line(0.5, y, 6.5, y);
-        y += 0.5;
+        // Drinks in italic
+        drinks.forEach(item => {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`${item.quantity} ${item.name}`, 15, y);
+            doc.setFont('helvetica', 'normal');
+            y += 6;
+        });
 
-        // Add footer
+        // Add separator line before footer
+        y += 3;
+        doc.setDrawColor(150, 150, 150);
+        doc.setLineWidth(0.3);
+        doc.line(left, y, right, y);
+        y += 7;
+
+        // Footer with "Fin commande" and date/time
         doc.setFontSize(10);
-        doc.text('Fin de commande', 3.5, y, { align: 'center' });
-        y += 0.5;
-        doc.text('Merci!', 3.5, y, { align: 'center' });
+        doc.text('Fin commande', left, y);
+        doc.text(`${dateStr} ${timeStr}`, right, y, { align: 'right' });
 
         // Save the PDF
         doc.save(`kitchen-ticket-${order.id}.pdf`);
@@ -1949,7 +1969,23 @@ const PosIndex = ({ auth }) => {
                         </div>
 
                         {/* Orders Button */}
-                        
+                        <div className="bg-white border-b shadow-sm">
+                            <button
+                                onClick={() => setShowOrders(true)}
+                                className="w-full p-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-yellow-100 p-1 rounded">
+                                        <ClipboardDocumentIcon className="h-4 w-4 text-yellow-700" />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700">Commandes en cours</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">{orders.filter(o => o.status === 'in_progress').length} commandes</span>
+                                    <ChevronRightIcon className="h-4 w-4 text-gray-400" />
+                                </div>
+                            </button>
+                        </div>
 
                         {/* Orders Modal */}
                         {showOrders && (
