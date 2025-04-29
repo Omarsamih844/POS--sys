@@ -1124,6 +1124,8 @@ const PosIndex = ({ auth }) => {
     const [showTableOccupancyModal, setShowTableOccupancyModal] = useState(false);
     const [selectedTableId, setSelectedTableId] = useState(null);
     const [tableOccupancies, setTableOccupancies] = useState({});
+    const [tableStartTimes, setTableStartTimes] = useState({});
+    const [tableTimers, setTableTimers] = useState({});
     const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
     const [tables, setTables] = useState([
         { id: '1', status: 'available' },
@@ -1163,6 +1165,43 @@ const PosIndex = ({ auth }) => {
         calculateTotals();
         updateCounts();
     }, [cart, orderType]);
+
+    // Set up a timer to update the elapsed time for each table
+    useEffect(() => {
+        // Function to update timer displays
+        const updateTimers = () => {
+            const now = new Date().getTime();
+            const updated = {};
+            
+            // For each table with a start time, calculate elapsed time
+            Object.keys(tableStartTimes).forEach(tableId => {
+                if (tableStartTimes[tableId]) {
+                    const startTime = tableStartTimes[tableId];
+                    const elapsedMs = now - startTime;
+                    
+                    // Format the time as mm:ss or hh:mm:ss if over an hour
+                    const seconds = Math.floor((elapsedMs / 1000) % 60);
+                    const minutes = Math.floor((elapsedMs / (1000 * 60)) % 60);
+                    const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                    
+                    if (hours > 0) {
+                        updated[tableId] = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        updated[tableId] = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    }
+                }
+            });
+            
+            setTableTimers(updated);
+        };
+        
+        // Update immediately and then every second
+        updateTimers();
+        const timerId = setInterval(updateTimers, 1000);
+        
+        // Clean up interval on unmount
+        return () => clearInterval(timerId);
+    }, [tableStartTimes]);
 
     const updateCounts = () => {
         const foodItems = cart.filter(item => {
@@ -1487,6 +1526,55 @@ const PosIndex = ({ auth }) => {
             setSelectedProduct(null);
             setShowPaymentModal(false);
             
+            // If it was an eat_in order, clear the table's timer
+            if (finalOrder.type === 'eat_in' && finalOrder.table_number) {
+                // Calculate the usage time for the table
+                const startTime = tableStartTimes[finalOrder.table_number];
+                if (startTime) {
+                    const endTime = new Date().getTime();
+                    const elapsedMs = endTime - startTime;
+                    
+                    // Format the time for display and store in order
+                    const seconds = Math.floor((elapsedMs / 1000) % 60);
+                    const minutes = Math.floor((elapsedMs / (1000 * 60)) % 60);
+                    const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
+                    
+                    let formattedTime;
+                    if (hours > 0) {
+                        formattedTime = `${hours}h ${minutes}m ${seconds}s`;
+                    } else {
+                        formattedTime = `${minutes}m ${seconds}s`;
+                    }
+                    
+                    // Store both formatted and raw time for flexibility
+                    finalOrder.tableUsage = {
+                        formatted: formattedTime,
+                        raw: {
+                            hours,
+                            minutes,
+                            seconds,
+                            totalSeconds: Math.floor(elapsedMs / 1000)
+                        },
+                        startTime,
+                        endTime
+                    };
+                }
+                
+                // Remove the table start time
+                setTableStartTimes(prev => {
+                    const updated = { ...prev };
+                    delete updated[finalOrder.table_number];
+                    return updated;
+                });
+                
+                // Remove the table occupancy
+                setTableOccupancies(prev => {
+                    const updated = { ...prev };
+                    delete updated[finalOrder.table_number];
+                    return updated;
+                });
+            }
+            
             // Show success message
             showAlert('Paiement réussi!', 'Succès');
 
@@ -1686,6 +1774,8 @@ const PosIndex = ({ auth }) => {
 
     // Add a new function to handle table occupancy
     const handleTableOccupancySave = (tableId, numberOfPeople, cancelOrder = false) => {
+        setShowTableOccupancyModal(false);
+
         if (cancelOrder) {
             // Cancel the order for this table
             const orderToCancel = activeOrders.find(order => 
@@ -1693,77 +1783,96 @@ const PosIndex = ({ auth }) => {
             );
             
             if (orderToCancel) {
-                setActiveOrders(activeOrders.map(order => 
-                    order.id === orderToCancel.id
-                        ? { ...order, status: 'cancelled' } 
-                        : order
-                ));
-                
-                // If cancelling the active order, clear the cart
-                if (orderToCancel.id === activeOrderId) {
-                    setCart([]);
-                    setActiveOrderId(null);
-                }
+                cancelOrder(orderToCancel.id);
             }
             
-            // Update table occupancies
+            // Update the tableOccupancies
             const updatedOccupancies = { ...tableOccupancies };
             delete updatedOccupancies[tableId];
             setTableOccupancies(updatedOccupancies);
             
+            // Remove the table start time and timer
+            const updatedStartTimes = { ...tableStartTimes };
+            delete updatedStartTimes[tableId];
+            setTableStartTimes(updatedStartTimes);
+            
             return;
         }
-        
-        // Store the number of people for this table
+
+        // If setting number of people, update the tableOccupancies state
         setTableOccupancies({
             ...tableOccupancies,
             [tableId]: numberOfPeople
         });
         
-        if (isSelectedTableOccupied) {
-            // Update existing order with new number of people
-            const orderToUpdate = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
-            );
+        // Set the start time for the table if not already set
+        if (!tableStartTimes[tableId]) {
+            setTableStartTimes({
+                ...tableStartTimes,
+                [tableId]: new Date().getTime()
+            });
+        }
+
+        if (tableNumber === tableId) {
+            // Already selected this table, no need to update
+            return;
+        }
+
+        // Update existing order with new number of people
+        const orderToUpdate = activeOrders.find(order => 
+            order.status === 'pending' && order.table_number === tableId
+        );
+        
+        if (orderToUpdate) {
+            // If we have an order for this table, update it
+            setActiveOrders(activeOrders.map(order =>
+                order.id === orderToUpdate.id
+                    ? { ...order, numberOfPeople: numberOfPeople }
+                    : order
+            ));
             
-            if (orderToUpdate) {
-                setActiveOrders(activeOrders.map(order => 
-                    order.id === orderToUpdate.id
-                        ? { ...order, numberOfPeople: numberOfPeople } 
-                        : order
-                )); 
-                // If updating the active order, update the state
-                if (orderToUpdate.id === activeOrderId) {
-                    // Just update the number of people in the current order
-                }
-            }
-        } else {
+            // Switch to this order
+            switchToOrder(orderToUpdate.id);
+        } else if (activeOrderId) {
             // We know there's an active order because of the check in handleTableSelect
-            // Just update the current active order with the table number and people
+            // Update the table number for the active order
             setTableNumber(tableId);
-            setOrderType('eat_in');
             
-            // Update the current active order with the table number and people
-            saveCurrentOrderState();
-            
-            setActiveOrders(activeOrders.map(order => 
+            // Also update in the activeOrders array
+            setActiveOrders(activeOrders.map(order =>
                 order.id === activeOrderId
-                    ? { 
-                        ...order, 
-                        type: 'eat_in',
-                        table_number: tableId,
-                        numberOfPeople: numberOfPeople
-                    }
+                    ? { ...order, table_number: tableId, type: 'eat_in', numberOfPeople: numberOfPeople }
                     : order
             ));
         }
-        
-        // Switch to the Caisse tab
-        setActiveTab('caisse');
     };
 
     // Add function to open order details modal
     const openOrderDetails = (order) => {
+        // Ensure the order has properly formatted table usage if it exists but isn't fully formatted
+        if (order.type === 'eat_in' && order.tableUsage) {
+            // If tableUsage exists but doesn't have the formatted property, format it
+            if (!order.tableUsage.formatted && order.tableUsage.raw) {
+                const { hours, minutes, seconds } = order.tableUsage.raw;
+                
+                if (hours > 0) {
+                    order.tableUsage.formatted = `${hours}h ${minutes}m ${seconds}s`;
+                } else {
+                    order.tableUsage.formatted = `${minutes}m ${seconds}s`;
+                }
+            }
+            // If tableUsage exists but only as a string or number, convert it to the proper structure
+            else if (typeof order.tableUsage === 'string' || typeof order.tableUsage === 'number') {
+                const oldValue = order.tableUsage;
+                order.tableUsage = {
+                    formatted: typeof oldValue === 'string' ? oldValue : `${Math.floor(oldValue / 60)}m ${oldValue % 60}s`,
+                    raw: {
+                        totalSeconds: typeof oldValue === 'number' ? oldValue : 0
+                    }
+                };
+            }
+        }
+        
         setSelectedOrderDetails(order);
         setShowOrderDetailsModal(true);
     };
@@ -2190,6 +2299,19 @@ const PosIndex = ({ auth }) => {
                                                                         {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
                                                                     </div>
                                                                 )}
+                                                                
+                                                                {/* Timer display */}
+                                                                {table.status === 'occupied' && tableTimers[table.id] && (
+                                                                    <div className="mt-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold shadow flex items-center">
+                                                                        <span className="mr-1">⏱️</span> {tableTimers[table.id]}
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Round Table Chairs */}
+                                                                <div className="absolute -top-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-12 -right-6 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute -bottom-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-12 -left-6 w-8 h-8 bg-blue-300 rounded-full"></div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -2216,6 +2338,13 @@ const PosIndex = ({ auth }) => {
                                                                 {table.status === 'occupied' && (
                                                                     <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
                                                                         {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    </div>
+                                                                )}
+                                                                
+                                                                {/* Timer display */}
+                                                                {table.status === 'occupied' && tableTimers[table.id] && (
+                                                                    <div className="mt-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center">
+                                                                        <span className="mr-1">⏱️</span> {tableTimers[table.id]}
                                                                     </div>
                                                                 )}
                                                                 
