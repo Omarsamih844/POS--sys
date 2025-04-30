@@ -318,6 +318,11 @@ const ProductSection = ({ onProductSelect, activeCategory, menuData }) => {
 };
 
 const PosIndex = ({ auth }) => {
+    // User name for display
+    const userName = auth.user.first_name && auth.user.last_name 
+        ? `${auth.user.first_name} ${auth.user.last_name}`
+        : auth.user.name || auth.user.email;
+        
     // Static Categories Data
     const [categories] = useState([
         { id: 1, name: "Plats", color: "#4F46E5" }, // Indigo for main dishes
@@ -2245,7 +2250,7 @@ const PosIndex = ({ auth }) => {
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636A9 9 0 005.636 18.364M1 1l22 22M8.53 16.11a6 6 0 016.95 0" />
                                             </svg>
                                         )}
-                                        {isOnline ? 'Connecté' : 'Hors ligne'}
+                                        {isOnline ? `${userName} - Connecté` : 'Hors ligne'}
                                     </div>
                                 </div>
                             </div>

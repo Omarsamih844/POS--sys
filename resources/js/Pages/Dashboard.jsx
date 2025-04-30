@@ -1,7 +1,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 
 export default function Dashboard() {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    const userName = user.first_name && user.last_name 
+        ? `${user.first_name} ${user.last_name}`
+        : user.name || user.email;
+
     return (
         <AuthenticatedLayout
             header={
@@ -16,7 +22,8 @@ export default function Dashboard() {
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg">
                         <div className="p-6 text-gray-900">
-                            You're logged in!
+                            <h3 className="text-lg font-medium mb-2">Welcome, {userName}!</h3>
+                            <p>You're successfully logged in to the POS Management System.</p>
                         </div>
                     </div>
                 </div>
