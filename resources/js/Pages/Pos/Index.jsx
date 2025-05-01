@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ServiceTypeModal from './ServiceTypeModal';
@@ -24,6 +24,7 @@ import {
     QueueListIcon
 } from '@heroicons/react/24/solid';
 import OrderDetailsModal from './OrderDetailsModal';
+import DiscountModal from './DiscountModal';
 
 // ActiveOrdersModal Component
 const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
@@ -1154,6 +1155,9 @@ const PosIndex = ({ auth }) => {
     const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
     const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
     const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+    const [showDiscountModal, setShowDiscountModal] = useState(false);
+    const [itemDiscounts, setItemDiscounts] = useState({});
+    const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1245,6 +1249,26 @@ const PosIndex = ({ auth }) => {
                 itemTotal += customizations[item.product_id].extraCharge * item.quantity;
             }
             
+            // Apply item-specific discount if any
+            if (itemDiscounts[item.product_id]) {
+                const discount = itemDiscounts[item.product_id];
+                if (discount.type === 'percentage') {
+                    // If discount is 100%, item should be completely free
+                    if (discount.value >= 100) {
+                        itemTotal = 0;
+                    } else {
+                        itemTotal -= (itemTotal * discount.value / 100);
+                    }
+                } else if (discount.type === 'fixed') {
+                    // If fixed discount is greater than or equal to item total, item is free
+                    if (discount.amount >= itemTotal) {
+                        itemTotal = 0;
+                    } else {
+                        itemTotal -= discount.amount;
+                    }
+                }
+            }
+            
             return sum + itemTotal;
         }, 0);
 
@@ -1260,9 +1284,9 @@ const PosIndex = ({ auth }) => {
             setDeliverySurcharge(0);
         }
 
-        // Apply promotion discount if active
+        // Apply promotion or order discount if active
         if (activePromotion) {
-            newTotal -= activePromotion.discountAmount;
+            newTotal -= activePromotion.amount;
         }
 
         setSubtotal(newSubtotal);
@@ -1364,7 +1388,8 @@ const PosIndex = ({ auth }) => {
             }),
             subtotal: 0,
             tax: 0,
-            total: 0
+            total: 0,
+            generateTicket: true // Default to generating ticket
         };
         
         // Add to active orders and set as current
@@ -1395,6 +1420,9 @@ const PosIndex = ({ auth }) => {
             setOrderType(orderToLoad.type || 'takeout');
             setTableNumber(orderToLoad.table_number || '');
             setNotes(orderToLoad.notes || '');
+            // Load discounts
+            setItemDiscounts(orderToLoad.itemDiscounts || {});
+            setActivePromotion(orderToLoad.orderDiscount || null);
             // Recalculate will happen via useEffect
         }
     };
@@ -1413,7 +1441,10 @@ const PosIndex = ({ auth }) => {
                     subtotal: subtotal,
                     tax: tax,
                     total: total,
-                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1
+                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1,
+                    generateTicket: order.generateTicket, // Preserve ticket generation setting
+                    itemDiscounts: itemDiscounts, // Save item discounts
+                    orderDiscount: activePromotion // Save order discount
                 }
                 : order
         ));
@@ -1484,7 +1515,8 @@ const PosIndex = ({ auth }) => {
                     quantity: item.quantity,
                     unit_price: item.unit_price || item.price || 0, // Use unit_price or price, fallback to 0
                     subtotal: item.quantity * (item.unit_price || item.price || 0),
-                    customizations: customizations[item.product_id]
+                    customizations: customizations[item.product_id],
+                    discount: itemDiscounts[item.product_id] || null
                 })),
                 type: orderType,
                 table_number: tableNumber,
@@ -1499,13 +1531,16 @@ const PosIndex = ({ auth }) => {
                     details: payment.details,
                     amount: amount
                 },
-                promotion: activePromotion
+                promotion: activePromotion,
+                generateTicket: currentOrder.generateTicket // Transfer ticket generation setting
             };
 
             // Generate the receipt
             try {
-                const receiptGenerator = Receipt();
-                receiptGenerator.generateReceipt(finalOrder);
+                if (currentOrder.generateTicket) {
+                    const receiptGenerator = Receipt();
+                    receiptGenerator.generateReceipt(finalOrder);
+                }
             } catch (receiptError) {
                 console.error('Error generating receipt:', receiptError);
                 // Continue the process even if receipt generation fails
@@ -1527,6 +1562,7 @@ const PosIndex = ({ auth }) => {
             setPaymentAmount(0);
             setChange(0);
             setActivePromotion(null);
+            setItemDiscounts({});
             setCustomizations({});
             setSelectedProduct(null);
             setShowPaymentModal(false);
@@ -1882,6 +1918,31 @@ const PosIndex = ({ auth }) => {
         setShowOrderDetailsModal(true);
     };
 
+    // Add handleDiscountApply function
+    const handleDiscountApply = (discount) => {
+        if (discount.target === 'item' && discount.itemId) {
+            // Apply to specific item
+            setItemDiscounts({
+                ...itemDiscounts,
+                [discount.itemId]: discount
+            });
+        } else {
+            // Apply to full order
+            setActivePromotion(discount);
+        }
+        calculateTotals();
+    };
+
+    // Add openDiscountModal function
+    const openDiscountModal = (item = null) => {
+        if (!activeOrderId) {
+            showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
+            return;
+        }
+        setSelectedDiscountItem(item);
+        setShowDiscountModal(true);
+    };
+
     return (
         <>
             <Head title="Système de Caisse" />
@@ -1930,19 +1991,7 @@ const PosIndex = ({ auth }) => {
                                         <ClockIcon className="h-4 w-4" />
                                         Historique
                                     </button>
-                                </div>
-                            </div>
-                            {/* Status Indicators */}
-                            <div className="flex gap-2 mt-1">
-                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-700 font-semibold text-xs">
-                                    <span>Produits :</span>
-                                    <span className="text-base">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
-                                </div>
-                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-900 font-semibold text-xs">
-                                    <span>Total:</span>
-                                    <span className="text-base">{total.toFixed(2)} MAD</span>
-                                </div>
-                                {activeOrderId && (
+                                    {activeOrderId && (
                                     <button 
                                         onClick={() => cancelOrder(activeOrderId)}
                                         className="flex items-center gap-1 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-full shadow text-red-700 font-semibold text-xs transition-colors"
@@ -1952,6 +2001,89 @@ const PosIndex = ({ auth }) => {
                                         </svg>
                                         <span>Annuler</span>
                                     </button>
+                                )}
+                                </div>
+                            </div>
+                            {/* Status Indicators */}
+                            <div className="flex gap-2 mt-1">
+                                {activeOrderId && (
+                                <div className="flex items-center bg-white rounded-md px-2 py-1 shadow-sm">
+                                    <span className="text-sm font-medium text-gray-700 mr-2">Ticket</span>
+                                    <button 
+                                        onClick={() => {
+                                            // Toggle ticket generation for current order
+                                            setActiveOrders(activeOrders.map(order => 
+                                                order.id === activeOrderId
+                                                    ? { ...order, generateTicket: !order.generateTicket }
+                                                    : order
+                                            ));
+                                        }}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                        disabled={!activeOrderId}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                    <span className="text-sm text-gray-500 ml-2">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
+                                </div>
+                                )}
+                                
+                                {activeOrderId && (
+                                <div className="flex items-center bg-white rounded-md px-2 py-1 shadow-sm">
+                                    <button 
+                                        onClick={() => openDiscountModal()}
+                                        className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span>Remise</span>
+                                    </button>
+                                </div>
+                                )}
+                                
+                                {activeOrderId && selectedProduct && (
+                                <div className="flex items-center bg-white rounded-md px-2 py-1 shadow-sm">
+                                    <button 
+                                        onClick={() => {
+                                            // Set selected item as free
+                                            if (!selectedProduct) {
+                                                showAlert('Veuillez sélectionner un article d\'abord', 'Information');
+                                                return;
+                                            }
+                                            
+                                            // Apply 100% discount to the item
+                                            const discount = {
+                                                type: 'percentage',
+                                                value: 100,
+                                                amount: selectedProduct.price * (cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0),
+                                                target: 'item',
+                                                itemId: selectedProduct.id,
+                                                name: `Article gratuit: ${selectedProduct.name}`
+                                            };
+                                            
+                                            // Confirm with user
+                                            showConfirm(
+                                                `Rendre gratuit l'article "${selectedProduct.name}" ?`,
+                                                (confirmed) => {
+                                                    if (confirmed) {
+                                                        setItemDiscounts({
+                                                            ...itemDiscounts,
+                                                            [selectedProduct.id]: discount
+                                                        });
+                                                        calculateTotals();
+                                                    }
+                                                },
+                                                'Confirmation'
+                                            );
+                                        }}
+                                        className="flex items-center gap-1 text-sm font-medium text-green-600 hover:text-green-800"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
+                                        </svg>
+                                        <span>Gratuit</span>
+                                    </button>
+                                </div>
                                 )}
                             </div>
                         </div>
@@ -1981,7 +2113,23 @@ const PosIndex = ({ auth }) => {
                                             }`}
                                         >
                                             <div className="flex-1 pr-2">
-                                                <div className="font-medium text-sm">{item.name}</div>
+                                                <div className="font-medium text-sm">
+                                                    {item.name}
+                                                    {itemDiscounts[item.product_id] && (
+                                                        <span className={`ml-2 text-xs font-normal ${
+                                                            itemDiscounts[item.product_id].type === 'percentage' && 
+                                                            itemDiscounts[item.product_id].value >= 100 ? 
+                                                            'text-red-600 font-semibold' : 'text-green-600'
+                                                        }`}>
+                                                            {itemDiscounts[item.product_id].type === 'percentage' && 
+                                                             itemDiscounts[item.product_id].value >= 100 ? 
+                                                             '(GRATUIT)' : 
+                                                             `(-${itemDiscounts[item.product_id].type === 'percentage' 
+                                                                ? itemDiscounts[item.product_id].value + '%' 
+                                                                : itemDiscounts[item.product_id].amount.toFixed(2) + ' MAD'})`}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="text-gray-600 text-xs">
                                                     {formatPrice(item.unit_price || item.price)} x {item.quantity}
                                                 </div>
@@ -1993,7 +2141,20 @@ const PosIndex = ({ auth }) => {
                                             </div>
                                             <div className="flex items-center space-x-1">
                                                 <div className="font-bold text-gray-800 text-sm">
-                                                    {formatPrice((item.unit_price || item.price) * item.quantity)}
+                                                    {itemDiscounts[item.product_id] && 
+                                                    ((itemDiscounts[item.product_id].type === 'percentage' && 
+                                                      itemDiscounts[item.product_id].value >= 100) ||
+                                                     (itemDiscounts[item.product_id].type === 'fixed' && 
+                                                      itemDiscounts[item.product_id].amount >= (item.unit_price || item.price) * item.quantity)) ? 
+                                                     '0.00 MAD' :
+                                                     formatPrice(
+                                                         itemDiscounts[item.product_id]
+                                                             ? itemDiscounts[item.product_id].type === 'percentage'
+                                                                ? (item.unit_price || item.price) * item.quantity * (1 - itemDiscounts[item.product_id].value / 100)
+                                                                : (item.unit_price || item.price) * item.quantity - itemDiscounts[item.product_id].amount
+                                                            : (item.unit_price || item.price) * item.quantity
+                                                     )
+                                                    }
                                                 </div>
                                                 <div className="flex flex-col space-y-1">
                                                     <button
@@ -2009,6 +2170,19 @@ const PosIndex = ({ auth }) => {
                                                         style={{ minWidth: 0, minHeight: 0, padding: 0 }}
                                                     >
                                                         <PencilIcon className="h-5 w-5 text-blue-500" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openDiscountModal(item);
+                                                        }}
+                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
+                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
+                                                        title="Appliquer une remise"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -2065,7 +2239,7 @@ const PosIndex = ({ auth }) => {
                                 {activePromotion && (
                                     <div className="flex justify-between text-xs text-green-600">
                                         <span className="truncate">{activePromotion.name}</span>
-                                        <span>-{activePromotion.discountAmount.toFixed(2)}</span>
+                                        <span>-{activePromotion.amount.toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="h-px bg-gray-200 my-1"></div>
@@ -2588,10 +2762,14 @@ const PosIndex = ({ auth }) => {
                                                                 {order.status === 'paid' && (
                                                                     <button 
                                                                         onClick={() => {
-                                                                            const receiptGenerator = Receipt();
-                                                                            receiptGenerator.generateReceipt(order);
+                                                                            if (order.generateTicket) {
+                                                                                const receiptGenerator = Receipt();
+                                                                                receiptGenerator.generateReceipt(order);
+                                                                            } else {
+                                                                                showAlert('La génération de ticket est désactivée pour cette commande', 'Information');
+                                                                            }
                                                                         }}
-                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                        className={`px-2 py-1 rounded ${order.generateTicket ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
                                                                     >
                                                                         Imprimer
                                                                     </button>
@@ -2716,10 +2894,14 @@ const PosIndex = ({ auth }) => {
                                                                     </button>
                                                                     <button 
                                                                         onClick={() => {
-                                                                            const receiptGenerator = Receipt();
-                                                                            receiptGenerator.generateReceipt(order);
+                                                                            if (order.generateTicket) {
+                                                                                const receiptGenerator = Receipt();
+                                                                                receiptGenerator.generateReceipt(order);
+                                                                            } else {
+                                                                                showAlert('La génération de ticket est désactivée pour cette commande', 'Information');
+                                                                            }
                                                                         }}
-                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                        className={`px-2 py-1 rounded ${order.generateTicket ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
                                                                     >
                                                                         Imprimer
                                                                     </button>
@@ -2892,6 +3074,13 @@ const PosIndex = ({ auth }) => {
                 isOpen={showOrderDetailsModal}
                 onClose={() => setShowOrderDetailsModal(false)}
                 order={selectedOrderDetails}
+            />
+            <DiscountModal
+                isOpen={showDiscountModal}
+                onClose={() => setShowDiscountModal(false)}
+                onApply={handleDiscountApply}
+                selectedItem={selectedDiscountItem}
+                subtotal={subtotal}
             />
         </>
     );
