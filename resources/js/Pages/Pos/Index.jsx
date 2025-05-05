@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ServiceTypeModal from './ServiceTypeModal';
@@ -8,6 +8,7 @@ import PromotionModal from './PromotionModal';
 import CustomizeModal from './CustomizeModal';
 import PaymentModal from './PaymentModal';
 import TableOccupancyModal from './TableOccupancyModal';
+import Modal from '@/Components/Modal';
 import { 
     DocumentTextIcon, 
     ShoppingCartIcon, 
@@ -25,8 +26,8 @@ import {
     ChevronRightIcon,
     QueueListIcon
 } from '@heroicons/react/24/solid';
-import { jsPDF } from 'jspdf';
-
+import OrderDetailsModal from './OrderDetailsModal';
+import DiscountModal from './DiscountModal';
 
 // ActiveOrdersModal Component
 const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
@@ -1157,6 +1158,13 @@ const PosIndex = ({ auth }) => {
     const [ordersReadyForPayment, setOrdersReadyForPayment] = useState({});
     const [showOrders, setShowOrders] = useState(false);
     const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
+    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
+    const [showDiscountModal, setShowDiscountModal] = useState(false);
+    const [itemDiscounts, setItemDiscounts] = useState({});
+    const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
+    const [showFreeItemModal, setShowFreeItemModal] = useState(false);
+    const [selectedFreeItem, setSelectedFreeItem] = useState(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1240,6 +1248,7 @@ const PosIndex = ({ auth }) => {
     };
 
     const calculateTotals = () => {
+        // Calculate subtotal with proper rounding
         const newSubtotal = cart.reduce((sum, item) => {
             let itemTotal = item.quantity * (item.price || item.unit_price);
             
@@ -1248,29 +1257,55 @@ const PosIndex = ({ auth }) => {
                 itemTotal += customizations[item.product_id].extraCharge * item.quantity;
             }
             
-            return sum + itemTotal;
+            // Apply item-specific discount if any
+            if (itemDiscounts[item.product_id]) {
+                const discount = itemDiscounts[item.product_id];
+                if (discount.type === 'percentage') {
+                    // If discount is 100%, item should be completely free
+                    if (discount.value >= 100) {
+                        itemTotal = 0;
+                    } else {
+                        // Apply percentage discount with proper rounding
+                        itemTotal = Math.round((itemTotal * (1 - discount.value / 100)) * 100) / 100;
+                    }
+                } else if (discount.type === 'fixed') {
+                    // If fixed discount is greater than or equal to item total, item is free
+                    if (discount.amount >= itemTotal) {
+                        itemTotal = 0;
+                    } else {
+                        // Apply fixed discount with proper rounding
+                        itemTotal = Math.round((itemTotal - discount.amount) * 100) / 100;
+                    }
+                }
+            }
+            
+            // Round to 2 decimal places
+            return Math.round((sum + itemTotal) * 100) / 100;
         }, 0);
 
-        const newTax = newSubtotal * 0.20; // 20% tax
-        let newTotal = newSubtotal + newTax;
+        // Calculate tax with proper rounding
+        const newTax = Math.round(newSubtotal * 0.20 * 100) / 100; // 20% tax
+        let newTotal = Math.round((newSubtotal + newTax) * 100) / 100;
         
         // Add delivery surcharge if delivery is selected
         if (orderType === 'delivery') {
-            const surcharge = newSubtotal * 0.10;
+            const surcharge = Math.round(newSubtotal * 0.10 * 100) / 100;
             setDeliverySurcharge(surcharge);
-            newTotal += surcharge;
+            newTotal = Math.round((newTotal + surcharge) * 100) / 100;
         } else {
             setDeliverySurcharge(0);
         }
 
-        // Apply promotion discount if active
+        // Apply promotion or order discount if active
         if (activePromotion) {
-            newTotal -= activePromotion.discountAmount;
+            // Handle both discount formats (for backward compatibility)
+            const discountAmount = activePromotion.amount || activePromotion.discountAmount || 0;
+            newTotal = Math.max(0, Math.round((newTotal - discountAmount) * 100) / 100);
         }
 
-        setSubtotal(newSubtotal);
-        setTax(newTax);
-        setTotal(newTotal);
+        setSubtotal(Math.round(newSubtotal * 100) / 100);
+        setTax(Math.round(newTax * 100) / 100);
+        setTotal(Math.round(newTotal * 100) / 100);
     };
 
     const addToCart = (productId, customizations = null) => {
@@ -1367,7 +1402,8 @@ const PosIndex = ({ auth }) => {
             }),
             subtotal: 0,
             tax: 0,
-            total: 0
+            total: 0,
+            generateTicket: true // Default to generating ticket
         };
         
         // Add to active orders and set as current
@@ -1398,6 +1434,9 @@ const PosIndex = ({ auth }) => {
             setOrderType(orderToLoad.type || 'takeout');
             setTableNumber(orderToLoad.table_number || '');
             setNotes(orderToLoad.notes || '');
+            // Load discounts
+            setItemDiscounts(orderToLoad.itemDiscounts || {});
+            setActivePromotion(orderToLoad.orderDiscount || null);
             // Recalculate will happen via useEffect
         }
     };
@@ -1416,7 +1455,10 @@ const PosIndex = ({ auth }) => {
                     subtotal: subtotal,
                     tax: tax,
                     total: total,
-                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1
+                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1,
+                    generateTicket: order.generateTicket, // Preserve ticket generation setting
+                    itemDiscounts: itemDiscounts, // Save item discounts
+                    orderDiscount: activePromotion // Save order discount
                 }
                 : order
         ));
@@ -1487,7 +1529,8 @@ const PosIndex = ({ auth }) => {
                     quantity: item.quantity,
                     unit_price: item.unit_price || item.price || 0, // Use unit_price or price, fallback to 0
                     subtotal: item.quantity * (item.unit_price || item.price || 0),
-                    customizations: customizations[item.product_id]
+                    customizations: customizations[item.product_id],
+                    discount: itemDiscounts[item.product_id] || null
                 })),
                 type: orderType,
                 table_number: tableNumber,
@@ -1502,13 +1545,16 @@ const PosIndex = ({ auth }) => {
                     details: payment.details,
                     amount: amount
                 },
-                promotion: activePromotion
+                promotion: activePromotion,
+                generateTicket: currentOrder.generateTicket // Transfer ticket generation setting
             };
 
             // Generate the receipt
             try {
-                const receiptGenerator = Receipt();
-                receiptGenerator.generateReceipt(finalOrder);
+                if (currentOrder.generateTicket) {
+                    const receiptGenerator = Receipt();
+                    receiptGenerator.generateReceipt(finalOrder);
+                }
             } catch (receiptError) {
                 console.error('Error generating receipt:', receiptError);
                 // Continue the process even if receipt generation fails
@@ -1530,6 +1576,7 @@ const PosIndex = ({ auth }) => {
             setPaymentAmount(0);
             setChange(0);
             setActivePromotion(null);
+            setItemDiscounts({});
             setCustomizations({});
             setSelectedProduct(null);
             setShowPaymentModal(false);
@@ -1902,6 +1949,104 @@ const PosIndex = ({ auth }) => {
         setShowOrderDetailsModal(true);
     };
 
+    // Add handleDiscountApply function
+    const handleDiscountApply = (discount) => {
+        if (discount.target === 'item' && discount.itemId) {
+            // Apply to specific item - normalize the discount format
+            const normalizedDiscount = {
+                ...discount,
+                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                value: parseFloat(discount.value)
+            };
+
+            // Apply to specific item
+            setItemDiscounts({
+                ...itemDiscounts,
+                [discount.itemId]: normalizedDiscount
+            });
+        } else {
+            // Apply to full order - normalize the discount format
+            const normalizedDiscount = {
+                ...discount,
+                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                discountAmount: Math.round(discount.amount * 100) / 100 // Add for compatibility
+            };
+            
+            // Apply to full order
+            setActivePromotion(normalizedDiscount);
+        }
+        
+        // Force recalculation
+        setTimeout(() => {
+            calculateTotals();
+        }, 0);
+    };
+
+    // Add openDiscountModal function
+    const openDiscountModal = (item = null) => {
+        if (!activeOrderId) {
+            showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
+            return;
+        }
+        setSelectedDiscountItem(item);
+        setShowDiscountModal(true);
+    };
+
+    const handleMakeItemFree = (target) => {
+        if (target === 'order') {
+            // Apply 100% discount to the entire order
+            const orderDiscount = {
+                type: 'percentage',
+                value: 100,
+                amount: subtotal,
+                target: 'order',
+                name: 'Commande gratuite'
+            };
+            setActivePromotion(orderDiscount);
+        } else if (target === 'item' && selectedProduct) {
+            // Apply 100% discount to the selected item
+            const itemDiscount = {
+                type: 'percentage',
+                value: 100,
+                amount: selectedProduct.price * (cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0),
+                target: 'item',
+                itemId: selectedProduct.id,
+                name: `Article gratuit: ${selectedProduct.name}`
+            };
+            setItemDiscounts({
+                ...itemDiscounts,
+                [selectedProduct.id]: itemDiscount
+            });
+        } else {
+            showAlert('Veuillez sélectionner un article d\'abord', 'Information');
+        }
+        
+        setShowFreeItemModal(false);
+        calculateTotals();
+    };
+
+    // Add an event listener to close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            const remiseDropdown = document.getElementById('remiseDropdown');
+            const gratuitDropdown = document.getElementById('gratuitDropdown');
+            
+            if (remiseDropdown && !event.target.closest('.remise-container')) {
+                remiseDropdown.classList.add('hidden');
+            }
+            
+            if (gratuitDropdown && !event.target.closest('.gratuit-container')) {
+                gratuitDropdown.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
+
     return (
         <>
             <Head title="Système de Caisse" />
@@ -1952,28 +2097,132 @@ const PosIndex = ({ auth }) => {
                                     </button>
                                 </div>
                             </div>
-                            {/* Status Indicators */}
-                            <div className="flex gap-2 mt-1">
-                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-700 font-semibold text-xs">
-                                    <span>Produits :</span>
-                                    <span className="text-base">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                            
+                            {/* Order Command Header - Blue style similar to the image */}
+                            {activeOrderId && (
+                                <div className="bg-blue-600 p-2 rounded-md mt-2 mb-1">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <span className="text-xs text-blue-200">Commande sur place</span>
+                                                <div className="text-base font-bold">{activeOrderId}</div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => {
+                                                        // Toggle ticket setting directly
+                                                        setActiveOrders(activeOrders.map(order => 
+                                                            order.id === activeOrderId
+                                                                ? { ...order, generateTicket: !order.generateTicket }
+                                                                : order
+                                                        ));
+                                                    }}
+                                                    className={`px-2 py-1 rounded-md flex items-center ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                                                    title="Ticket"
+                                                >
+                                                    <DocumentTextIcon className="h-4 w-4" />
+                                                    <span className="text-xs ml-1">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
+                                                </button>
+                                                <div className="relative remise-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (!selectedProduct && cart.length === 0) {
+                                                                showAlert('Ajoutez des articles ou sélectionnez un article pour appliquer une remise', 'Information');
+                                                                return;
+                                                            }
+                                                            const dropdown = document.getElementById('remiseDropdown');
+                                                            dropdown.classList.toggle('hidden');
+                                                            e.stopPropagation();
+                                                        }}
+                                                        className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50"
+                                                        title="Remise"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </button>
+                                                    <div id="remiseDropdown" className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 hidden">
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('remiseDropdown').classList.add('hidden');
+                                                                if (selectedProduct) {
+                                                                    openDiscountModal(cart.find(item => item.product_id === selectedProduct.id));
+                                                                } else {
+                                                                    showAlert('Sélectionnez un article d\'abord', 'Information');
+                                                                }
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-blue-100 w-full rounded-t-md"
+                                                        >
+                                                            Article
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('remiseDropdown').classList.add('hidden');
+                                                                openDiscountModal();
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-blue-100 w-full rounded-b-md"
+                                                        >
+                                                            Commande
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="relative gratuit-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (!selectedProduct && cart.length === 0) {
+                                                                showAlert('Ajoutez des articles ou sélectionnez un article pour le rendre gratuit', 'Information');
+                                                                return;
+                                                            }
+                                                            const dropdown = document.getElementById('gratuitDropdown');
+                                                            dropdown.classList.toggle('hidden');
+                                                            e.stopPropagation();
+                                                        }}
+                                                        className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50"
+                                                        title="Gratuit"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
+                                                        </svg>
+                                                    </button>
+                                                    <div id="gratuitDropdown" className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 hidden">
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('gratuitDropdown').classList.add('hidden');
+                                                                if (selectedProduct) {
+                                                                    handleMakeItemFree('item');
+                                                                } else {
+                                                                    showAlert('Sélectionnez un article d\'abord', 'Information');
+                                                                }
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-green-100 w-full rounded-t-md"
+                                                        >
+                                                            Article
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('gratuitDropdown').classList.add('hidden');
+                                                                handleMakeItemFree('order');
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-green-100 w-full rounded-b-md"
+                                                        >
+                                                            Commande
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => cancelOrder(activeOrderId)}
+                                                    className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                                                    title="Annuler"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-900 font-semibold text-xs">
-                                    <span>Total:</span>
-                                    <span className="text-base">{total.toFixed(2)} MAD</span>
-                                </div>
-                                {activeOrderId && (
-                                    <button 
-                                        onClick={() => cancelOrder(activeOrderId)}
-                                        className="flex items-center gap-1 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-full shadow text-red-700 font-semibold text-xs transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                        <span>Annuler</span>
-                                    </button>
-                                )}
-                            </div>
+                            )}
                         </div>
 
                         {/* Orders Button */}
@@ -2050,9 +2299,44 @@ const PosIndex = ({ auth }) => {
                                             `}
                                         >
                                             <div className="flex-1 pr-2">
-                                                <div className="font-medium text-sm">{item.name}</div>
+                                                <div className="font-medium text-sm">
+                                                    {item.name}
+                                                    {itemDiscounts[item.product_id] && (
+                                                        <span className={`ml-2 text-xs font-normal ${
+                                                            itemDiscounts[item.product_id].type === 'percentage' && 
+                                                            itemDiscounts[item.product_id].value >= 100 ? 
+                                                            'text-red-600 font-semibold' : 'text-green-600'
+                                                        }`}>
+                                                            {itemDiscounts[item.product_id].type === 'percentage' && 
+                                                             itemDiscounts[item.product_id].value >= 100 ? 
+                                                             '(GRATUIT)' : 
+                                                             `(-${itemDiscounts[item.product_id].type === 'percentage' 
+                                                                ? itemDiscounts[item.product_id].value + '%' 
+                                                                : itemDiscounts[item.product_id].amount.toFixed(2) + ' MAD'})`}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="text-gray-600 text-xs">
                                                     {formatPrice(item.unit_price || item.price)} x {item.quantity}
+                                                    {itemDiscounts[item.product_id] && (
+                                                        <span className="ml-1">
+                                                            ⟶ {
+                                                                itemDiscounts[item.product_id].type === 'percentage' && 
+                                                                itemDiscounts[item.product_id].value >= 100 ? 
+                                                                '0.00' : 
+                                                                (() => {
+                                                                    let price = item.unit_price || item.price;
+                                                                    const discount = itemDiscounts[item.product_id];
+                                                                    if (discount.type === 'percentage') {
+                                                                        price = price * (1 - discount.value / 100);
+                                                                    } else if (discount.type === 'fixed') {
+                                                                        price = Math.max(0, price - (discount.amount / item.quantity));
+                                                                    }
+                                                                    return formatPrice(price);
+                                                                })()
+                                                            } MAD
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {item.notes && (
                                                     <div className="text-xs text-gray-500 italic">
@@ -2062,7 +2346,20 @@ const PosIndex = ({ auth }) => {
                                             </div>
                                             <div className="flex items-center space-x-1">
                                                 <div className="font-bold text-gray-800 text-sm">
-                                                    {formatPrice((item.unit_price || item.price) * item.quantity)}
+                                                    {itemDiscounts[item.product_id] && 
+                                                    ((itemDiscounts[item.product_id].type === 'percentage' && 
+                                                      itemDiscounts[item.product_id].value >= 100) ||
+                                                     (itemDiscounts[item.product_id].type === 'fixed' && 
+                                                      itemDiscounts[item.product_id].amount >= (item.unit_price || item.price) * item.quantity)) ? 
+                                                     '0.00 MAD' :
+                                                     formatPrice(
+                                                         itemDiscounts[item.product_id]
+                                                             ? itemDiscounts[item.product_id].type === 'percentage'
+                                                                ? (item.unit_price || item.price) * item.quantity * (1 - itemDiscounts[item.product_id].value / 100)
+                                                                : (item.unit_price || item.price) * item.quantity - itemDiscounts[item.product_id].amount
+                                                            : (item.unit_price || item.price) * item.quantity
+                                                     )
+                                                    }
                                                 </div>
                                                 <div className="flex flex-col space-y-1">
                                                     <button
@@ -2078,6 +2375,19 @@ const PosIndex = ({ auth }) => {
                                                         style={{ minWidth: 0, minHeight: 0, padding: 0 }}
                                                     >
                                                         <PencilIcon className="h-5 w-5 text-blue-500" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            openDiscountModal(item)
+                                                        }}
+                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
+                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
+                                                        title="Appliquer une remise"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
@@ -2134,13 +2444,21 @@ const PosIndex = ({ auth }) => {
                                 {activePromotion && (
                                     <div className="flex justify-between text-xs text-green-600">
                                         <span className="truncate">{activePromotion.name}</span>
-                                        <span>-{activePromotion.discountAmount.toFixed(2)}</span>
+                                        <span>-{(activePromotion.amount || activePromotion.discountAmount || 0).toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="h-px bg-gray-200 my-1"></div>
                                 <div className="flex justify-between text-sm font-bold text-blue-900">
                                     <span>Total</span>
                                     <span>{total.toFixed(2)} MAD</span>
+                                </div>
+                                <div className="flex justify-center">
+                                    <button 
+                                        onClick={() => calculateTotals()}
+                                        className="px-3 py-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full mt-1"
+                                    >
+                                        Mise à jour
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -2657,10 +2975,14 @@ const PosIndex = ({ auth }) => {
                                                                 {order.status === 'paid' && (
                                                                     <button 
                                                                         onClick={() => {
-                                                                            const receiptGenerator = Receipt();
-                                                                            receiptGenerator.generateReceipt(order);
+                                                                            if (order.generateTicket) {
+                                                                                const receiptGenerator = Receipt();
+                                                                                receiptGenerator.generateReceipt(order);
+                                                                            } else {
+                                                                                showAlert('La génération de ticket est désactivée pour cette commande', 'Information');
+                                                                            }
                                                                         }}
-                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                        className={`px-2 py-1 rounded ${order.generateTicket ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
                                                                     >
                                                                         Imprimer
                                                                     </button>
@@ -2785,10 +3107,14 @@ const PosIndex = ({ auth }) => {
                                                                     </button>
                                                                     <button 
                                                                         onClick={() => {
-                                                                            const receiptGenerator = Receipt();
-                                                                            receiptGenerator.generateReceipt(order);
+                                                                            if (order.generateTicket) {
+                                                                                const receiptGenerator = Receipt();
+                                                                                receiptGenerator.generateReceipt(order);
+                                                                            } else {
+                                                                                showAlert('La génération de ticket est désactivée pour cette commande', 'Information');
+                                                                            }
                                                                         }}
-                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                        className={`px-2 py-1 rounded ${order.generateTicket ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
                                                                     >
                                                                         Imprimer
                                                                     </button>
@@ -2962,6 +3288,46 @@ const PosIndex = ({ auth }) => {
                 onClose={() => setShowOrderDetailsModal(false)}
                 order={selectedOrderDetails}
             />
+            <DiscountModal
+                isOpen={showDiscountModal}
+                onClose={() => setShowDiscountModal(false)}
+                onApply={handleDiscountApply}
+                selectedItem={selectedDiscountItem}
+                subtotal={subtotal}
+            />
+            {/* Free Item Modal */}
+            <Modal show={showFreeItemModal} onClose={() => setShowFreeItemModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Article Gratuit</h2>
+                    <p className="mb-4">Que souhaitez-vous rendre gratuit?</p>
+                    
+                    <div className="flex flex-col space-y-3 mb-4">
+                        <button
+                            onClick={() => handleMakeItemFree('order')}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                            Commande entière
+                        </button>
+                        <button
+                            onClick={() => handleMakeItemFree('item')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            disabled={!selectedProduct}
+                        >
+                            Article sélectionné
+                            {selectedProduct && <span className="ml-1">({selectedProduct.name})</span>}
+                        </button>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => setShowFreeItemModal(false)}
+                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+                        >
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 };
