@@ -8,20 +8,19 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('pos.index');
 });
 
+// Make POS page accessible without authentication
+Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+
+// Protected routes that require authentication server-side
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Redirect dashboard to POS
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        return redirect()->route('pos.index');
     })->name('dashboard');
 
-    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
     Route::post('/pos/orders', [PosController::class, 'storeOrder'])->name('pos.orders.store');
     
     // Tables management routes

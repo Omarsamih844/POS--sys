@@ -26,7 +26,184 @@ import {
     QueueListIcon
 } from '@heroicons/react/24/solid';
 import { jsPDF } from 'jspdf';
+import { useAuth } from '@/Contexts/AuthContext';
+import ProtectedRoute from '@/Components/ProtectedRoute';
 
+// OrderDetailsModal Component
+const OrderDetailsModal = ({ isOpen, onClose, order }) => {
+    if (!isOpen || !order) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-3/4 max-w-4xl max-h-[80vh] flex flex-col">
+                <div className="p-4 border-b flex justify-between items-center bg-blue-700 text-white rounded-t-lg">
+                    <h2 className="text-xl font-bold">Détails de la commande: {order.id}</h2>
+                    <button 
+                        onClick={onClose}
+                        className="text-white hover:text-gray-200"
+                    >
+                        <XMarkIcon className="h-6 w-6" />
+                    </button>
+                </div>
+                <div className="p-4 overflow-auto flex-grow">
+                    {/* Order Information */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <h3 className="font-semibold text-gray-700 mb-2">Informations de commande</h3>
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Date:</span>
+                                    <span className="font-medium">{order.timestamp}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Type:</span>
+                                    <span className="font-medium">
+                                        {order.type === 'eat_in' ? 'Sur Place' : order.type === 'takeout' ? 'À Emporter' : 'Livraison'}
+                                        {order.table_number && ` - Table ${order.table_number}`}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Statut:</span>
+                                    <span className={`font-medium px-2 py-1 rounded-full text-xs ${
+                                        order.status === 'paid' 
+                                            ? 'bg-green-100 text-green-800' 
+                                            : order.status === 'pending'
+                                                ? 'bg-yellow-100 text-yellow-800'
+                                                : 'bg-red-100 text-red-800'
+                                    }`}>
+                                        {order.status === 'paid' ? 'Payée' : order.status === 'pending' ? 'En cours' : 'Annulée'}
+                                    </span>
+                                </div>
+                                {order.cashier && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Caissier:</span>
+                                        <span className="font-medium">{order.cashier}</span>
+                                    </div>
+                                )}
+                                {order.type === 'eat_in' && order.tableUsage && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-600">Durée d'occupation:</span>
+                                        <span className="font-medium">{order.tableUsage.formatted || '00:00'}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                            <h3 className="font-semibold text-gray-700 mb-2">Totaux</h3>
+                            <div className="space-y-2">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">Sous-total:</span>
+                                    <span className="font-medium">{order.subtotal.toFixed(2)} MAD</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-600">TVA (20%):</span>
+                                    <span className="font-medium">{order.tax.toFixed(2)} MAD</span>
+                                </div>
+                                {order.promotion && (
+                                    <div className="flex justify-between text-green-600">
+                                        <span>Promotion ({order.promotion.name}):</span>
+                                        <span>-{order.promotion.discountAmount.toFixed(2)} MAD</span>
+                                    </div>
+                                )}
+                                <div className="border-t border-gray-300 my-2"></div>
+                                <div className="flex justify-between font-bold">
+                                    <span>Total:</span>
+                                    <span>{order.total.toFixed(2)} MAD</span>
+                                </div>
+                                {order.payment && (
+                                    <>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Méthode de paiement:</span>
+                                            <span className="font-medium capitalize">{order.payment.method}</span>
+                                        </div>
+                                        {order.payment.method === 'cash' && (
+                                            <>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Montant reçu:</span>
+                                                    <span className="font-medium">{order.payment.details.amount.toFixed(2)} MAD</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Monnaie:</span>
+                                                    <span className="font-medium">{(order.payment.details.amount - order.total).toFixed(2)} MAD</span>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Items */}
+                    <div className="bg-white rounded-lg border border-gray-200 mb-4">
+                        <h3 className="font-semibold text-gray-800 px-4 py-3 border-b">Articles</h3>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Article</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix unitaire</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {order.items.map((item, index) => (
+                                        <tr key={index} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {item.name}
+                                                {item.customizations && (
+                                                    <div className="text-xs text-gray-500 mt-1">
+                                                        {Object.entries(item.customizations.options || {}).map(([key, value]) => (
+                                                            <div key={key}>- {key}: {value}</div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.unit_price.toFixed(2)} MAD</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">{(item.quantity * item.unit_price).toFixed(2)} MAD</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {/* Notes */}
+                    {order.notes && (
+                        <div className="bg-white rounded-lg border border-gray-200 p-4">
+                            <h3 className="font-semibold text-gray-800 mb-2">Notes</h3>
+                            <p className="text-gray-600">{order.notes}</p>
+                        </div>
+                    )}
+                </div>
+                <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-lg flex justify-end">
+                    <div className="flex gap-4">
+                        {order.status === 'paid' && (
+                            <button 
+                                onClick={() => {
+                                    const receiptGenerator = Receipt();
+                                    receiptGenerator.generateReceipt(order);
+                                }}
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center"
+                            >
+                                <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
+                                Imprimer reçu
+                            </button>
+                        )}
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                        >
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ActiveOrdersModal Component
 const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
@@ -320,11 +497,16 @@ const ProductSection = ({ onProductSelect, activeCategory, menuData }) => {
     );
 };
 
-const PosIndex = ({ auth }) => {
+const PosIndex = ({ auth: propAuth }) => {
+    const { user: authUser, logout } = useAuth();
+    
+    // Use context auth first, fallback to props (for SSR)
+    const userInfo = authUser || propAuth?.user;
+    
     // User name for display
-    const userName = auth.user.first_name && auth.user.last_name 
-        ? `${auth.user.first_name} ${auth.user.last_name}`
-        : auth.user.name || auth.user.email;
+    const userName = userInfo?.first_name && userInfo?.last_name 
+        ? `${userInfo.first_name} ${userInfo.last_name}`
+        : userInfo?.name || userInfo?.email || 'Utilisateur';
         
     // Static Categories Data
     const [categories] = useState([
@@ -1135,6 +1317,8 @@ const PosIndex = ({ auth }) => {
     const [tableStartTimes, setTableStartTimes] = useState({});
     const [tableTimers, setTableTimers] = useState({});
     const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
+    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
     const [tables, setTables] = useState([
         { id: '1', status: 'available' },
         { id: '2', status: 'available' },
@@ -1902,8 +2086,12 @@ const PosIndex = ({ auth }) => {
         setShowOrderDetailsModal(true);
     };
 
+    const handleLogout = async () => {
+        await logout();
+    };
+
     return (
-        <>
+        <ProtectedRoute>
             <Head title="Système de Caisse" />
             <div className="min-h-screen bg-gray-100">
                 <Head title="Point of Sale" />
@@ -2306,20 +2494,41 @@ const PosIndex = ({ auth }) => {
                                             Caisse
                                         </button>
                                     </div>
-                                    {/* Right: Connection Status Indicator */}
-                                    <div className={`flex items-center px-3 py-1 ml-4 rounded-full font-semibold text-sm shadow-md select-none ${isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-                                        style={{ pointerEvents: 'none' }}
-                                    >
+                                    {/* Right: User Profile & Status */}
+                                    <div className="flex items-center">
+                                        <div className="relative group">
+                                            <div className={`flex items-center px-3 py-1 ml-4 rounded-full font-semibold text-sm shadow-md select-none ${isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} cursor-pointer`}>
                                         {isOnline ? (
-                                            <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.53 16.11a6 6 0 016.95 0M5.07 12.66a10 10 0 0113.86 0M1.64 9.21a14 14 0 0120.72 0M12 20h.01" />
-                                            </svg>
-                                        ) : (
+                                                    <div className="flex items-center">
+                                                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2 relative">
+                                                            <span className="text-gray-700 font-bold text-sm">
+                                                                {userName.split(' ').map(name => name[0]).join('')}
+                                                            </span>
+                                                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium">{userName}</span>
+                                                            <span className="text-xs">Caissier</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center">
                                             <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636A9 9 0 005.636 18.364M1 1l22 22M8.53 16.11a6 6 0 016.95 0" />
                                             </svg>
-                                        )}
-                                        {isOnline ? `${userName} - Connecté` : 'Hors ligne'}
+                                                        <span>Hors ligne</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                >
+                                                    Déconnexion
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2962,7 +3171,20 @@ const PosIndex = ({ auth }) => {
                 onClose={() => setShowOrderDetailsModal(false)}
                 order={selectedOrderDetails}
             />
-        </>
+        </ProtectedRoute>
     );
 };
-export default PosIndex;
+
+// Wrap PosIndex with ProtectedRoute for client-side authentication
+const ProtectedPosIndex = (props) => {
+    console.log("ProtectedPosIndex received props:", props?.users?.length || 0, "users");
+    
+    return (
+        <ProtectedRoute users={props.users}>
+            <PosIndex {...props} />
+        </ProtectedRoute>
+    );
+};
+
+// Export the protected component instead of the raw component
+export default ProtectedPosIndex;

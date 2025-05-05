@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG to PNG Converter</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        svg {
+            display: block;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        canvas {
+            display: block;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+        }
+        .button {
+            background: #4a6cf7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background: #3451b2;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>PWA Icon Generator</h1>
+    <p>This page will help you generate PNG icons from an SVG for your PWA.</p>
+    
+    <div>
+        <h2>SVG Icon</h2>
+        <svg id="svg-icon" width="512" height="512" viewBox="0 0 512 512">
+            <rect width="512" height="512" fill="#4A6CF7" rx="128" />
+            <text x="256" y="300" fill="white" font-size="220" text-anchor="middle" font-weight="bold" font-family="Arial, sans-serif">POS</text>
+            <path d="M128 120 L384 120 L384 180 L128 180 Z" fill="white" />
+        </svg>
+        
+        <div class="actions">
+            <button class="button" onclick="generatePNG(192)">Generate 192x192 PNG</button>
+            <button class="button" onclick="generatePNG(512)">Generate 512x512 PNG</button>
+        </div>
+        
+        <div id="output"></div>
+    </div>
+    
+    <script>
+        function generatePNG(size) {
+            const svg = document.getElementById('svg-icon');
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svg);
+            const svgBlob = new Blob([svgString], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(svgBlob);
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = canvas.toDataURL('image/png');
+                downloadLink.download = `pwa-${size}x${size}.png`;
+                
+                const output = document.getElementById('output');
+                output.innerHTML = `<h3>${size}x${size} PNG</h3>`;
+                output.appendChild(canvas);
+                
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'actions';
+                actionDiv.appendChild(downloadLink);
+                downloadLink.className = 'button';
+                downloadLink.innerText = `Download ${size}x${size} PNG`;
+                
+                output.appendChild(actionDiv);
+            };
+            img.src = url;
+        }
+    </script>
+</body>
+</html> 
