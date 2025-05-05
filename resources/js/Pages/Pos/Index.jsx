@@ -1159,7 +1159,6 @@ const PosIndex = ({ auth }) => {
     const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [itemDiscounts, setItemDiscounts] = useState({});
     const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
-    const [showTicketModal, setShowTicketModal] = useState(false);
     const [showFreeItemModal, setShowFreeItemModal] = useState(false);
     const [selectedFreeItem, setSelectedFreeItem] = useState(null);
 
@@ -1972,16 +1971,6 @@ const PosIndex = ({ auth }) => {
         setShowDiscountModal(true);
     };
 
-    const handleTicketToggle = () => {
-        // Toggle ticket generation for current order
-        setActiveOrders(activeOrders.map(order => 
-            order.id === activeOrderId
-                ? { ...order, generateTicket: !order.generateTicket }
-                : order
-        ));
-        setShowTicketModal(false);
-    };
-
     const handleMakeItemFree = (target) => {
         if (target === 'order') {
             // Apply 100% discount to the entire order
@@ -2014,6 +2003,28 @@ const PosIndex = ({ auth }) => {
         setShowFreeItemModal(false);
         calculateTotals();
     };
+
+    // Add an event listener to close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            const remiseDropdown = document.getElementById('remiseDropdown');
+            const gratuitDropdown = document.getElementById('gratuitDropdown');
+            
+            if (remiseDropdown && !event.target.closest('.remise-container')) {
+                remiseDropdown.classList.add('hidden');
+            }
+            
+            if (gratuitDropdown && !event.target.closest('.gratuit-container')) {
+                gratuitDropdown.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
 
     return (
         <>
@@ -2077,31 +2088,106 @@ const PosIndex = ({ auth }) => {
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <button
-                                                    onClick={() => setShowTicketModal(true)}
-                                                    className={`px-2 py-1 rounded-md flex items-center ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-green-500 text-white' : 'bg-white text-gray-600'}`}
+                                                    onClick={() => {
+                                                        // Toggle ticket setting directly
+                                                        setActiveOrders(activeOrders.map(order => 
+                                                            order.id === activeOrderId
+                                                                ? { ...order, generateTicket: !order.generateTicket }
+                                                                : order
+                                                        ));
+                                                    }}
+                                                    className={`px-2 py-1 rounded-md flex items-center ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
                                                     title="Ticket"
                                                 >
                                                     <DocumentTextIcon className="h-4 w-4" />
                                                     <span className="text-xs ml-1">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
                                                 </button>
-                                                <button
-                                                    onClick={() => openDiscountModal()}
-                                                    className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50"
-                                                    title="Remise"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => setShowFreeItemModal(true)}
-                                                    className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50"
-                                                    title="Gratuit"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
-                                                    </svg>
-                                                </button>
+                                                <div className="relative remise-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (!selectedProduct && cart.length === 0) {
+                                                                showAlert('Ajoutez des articles ou sélectionnez un article pour appliquer une remise', 'Information');
+                                                                return;
+                                                            }
+                                                            const dropdown = document.getElementById('remiseDropdown');
+                                                            dropdown.classList.toggle('hidden');
+                                                            e.stopPropagation();
+                                                        }}
+                                                        className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50"
+                                                        title="Remise"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </button>
+                                                    <div id="remiseDropdown" className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 hidden">
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('remiseDropdown').classList.add('hidden');
+                                                                if (selectedProduct) {
+                                                                    openDiscountModal(cart.find(item => item.product_id === selectedProduct.id));
+                                                                } else {
+                                                                    showAlert('Sélectionnez un article d\'abord', 'Information');
+                                                                }
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-blue-100 w-full rounded-t-md"
+                                                        >
+                                                            Article
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('remiseDropdown').classList.add('hidden');
+                                                                openDiscountModal();
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-blue-100 w-full rounded-b-md"
+                                                        >
+                                                            Commande
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="relative gratuit-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (!selectedProduct && cart.length === 0) {
+                                                                showAlert('Ajoutez des articles ou sélectionnez un article pour le rendre gratuit', 'Information');
+                                                                return;
+                                                            }
+                                                            const dropdown = document.getElementById('gratuitDropdown');
+                                                            dropdown.classList.toggle('hidden');
+                                                            e.stopPropagation();
+                                                        }}
+                                                        className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50"
+                                                        title="Gratuit"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
+                                                        </svg>
+                                                    </button>
+                                                    <div id="gratuitDropdown" className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 hidden">
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('gratuitDropdown').classList.add('hidden');
+                                                                if (selectedProduct) {
+                                                                    handleMakeItemFree('item');
+                                                                } else {
+                                                                    showAlert('Sélectionnez un article d\'abord', 'Information');
+                                                                }
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-green-100 w-full rounded-t-md"
+                                                        >
+                                                            Article
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('gratuitDropdown').classList.add('hidden');
+                                                                handleMakeItemFree('order');
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-green-100 w-full rounded-b-md"
+                                                        >
+                                                            Commande
+                                                        </button>
+                                                    </div>
+                                                </div>
                                                 <button
                                                     onClick={() => cancelOrder(activeOrderId)}
                                                     className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
@@ -3139,28 +3225,6 @@ const PosIndex = ({ auth }) => {
                 selectedItem={selectedDiscountItem}
                 subtotal={subtotal}
             />
-            {/* Ticket Modal */}
-            <Modal show={showTicketModal} onClose={() => setShowTicketModal(false)}>
-                <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">Préférence Ticket</h2>
-                    <p className="mb-4">Voulez-vous activer l'impression du ticket?</p>
-                    <div className="flex justify-end space-x-3">
-                        <button
-                            onClick={() => setShowTicketModal(false)}
-                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            onClick={handleTicketToggle}
-                            className="bg-blue-600 text-white px-4 py-2 rounded"
-                        >
-                            {activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'Désactiver' : 'Activer'}
-                        </button>
-                    </div>
-                </div>
-            </Modal>
-
             {/* Free Item Modal */}
             <Modal show={showFreeItemModal} onClose={() => setShowFreeItemModal(false)}>
                 <div className="p-6">
