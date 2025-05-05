@@ -2309,7 +2309,7 @@ const PosIndex = ({ auth }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            openDiscountModal(item);
+                                                            openDiscountModal(item)
                                                         }}
                                                         className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
                                                         style={{ minWidth: 0, minHeight: 0, padding: 0 }}
