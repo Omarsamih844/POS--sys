@@ -1241,6 +1241,7 @@ const PosIndex = ({ auth }) => {
     };
 
     const calculateTotals = () => {
+        // Calculate subtotal with proper rounding
         const newSubtotal = cart.reduce((sum, item) => {
             let itemTotal = item.quantity * (item.price || item.unit_price);
             
@@ -1257,41 +1258,47 @@ const PosIndex = ({ auth }) => {
                     if (discount.value >= 100) {
                         itemTotal = 0;
                     } else {
-                        itemTotal -= (itemTotal * discount.value / 100);
+                        // Apply percentage discount with proper rounding
+                        itemTotal = Math.round((itemTotal * (1 - discount.value / 100)) * 100) / 100;
                     }
                 } else if (discount.type === 'fixed') {
                     // If fixed discount is greater than or equal to item total, item is free
                     if (discount.amount >= itemTotal) {
                         itemTotal = 0;
                     } else {
-                        itemTotal -= discount.amount;
+                        // Apply fixed discount with proper rounding
+                        itemTotal = Math.round((itemTotal - discount.amount) * 100) / 100;
                     }
                 }
             }
             
-            return sum + itemTotal;
+            // Round to 2 decimal places
+            return Math.round((sum + itemTotal) * 100) / 100;
         }, 0);
 
-        const newTax = newSubtotal * 0.20; // 20% tax
-        let newTotal = newSubtotal + newTax;
+        // Calculate tax with proper rounding
+        const newTax = Math.round(newSubtotal * 0.20 * 100) / 100; // 20% tax
+        let newTotal = Math.round((newSubtotal + newTax) * 100) / 100;
         
         // Add delivery surcharge if delivery is selected
         if (orderType === 'delivery') {
-            const surcharge = newSubtotal * 0.10;
+            const surcharge = Math.round(newSubtotal * 0.10 * 100) / 100;
             setDeliverySurcharge(surcharge);
-            newTotal += surcharge;
+            newTotal = Math.round((newTotal + surcharge) * 100) / 100;
         } else {
             setDeliverySurcharge(0);
         }
 
         // Apply promotion or order discount if active
         if (activePromotion) {
-            newTotal -= activePromotion.amount;
+            // Handle both discount formats (for backward compatibility)
+            const discountAmount = activePromotion.amount || activePromotion.discountAmount || 0;
+            newTotal = Math.max(0, Math.round((newTotal - discountAmount) * 100) / 100);
         }
 
-        setSubtotal(newSubtotal);
-        setTax(newTax);
-        setTotal(newTotal);
+        setSubtotal(Math.round(newSubtotal * 100) / 100);
+        setTax(Math.round(newTax * 100) / 100);
+        setTotal(Math.round(newTotal * 100) / 100);
     };
 
     const addToCart = (productId, customizations = null) => {
@@ -1921,16 +1928,34 @@ const PosIndex = ({ auth }) => {
     // Add handleDiscountApply function
     const handleDiscountApply = (discount) => {
         if (discount.target === 'item' && discount.itemId) {
+            // Apply to specific item - normalize the discount format
+            const normalizedDiscount = {
+                ...discount,
+                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                value: parseFloat(discount.value)
+            };
+
             // Apply to specific item
             setItemDiscounts({
                 ...itemDiscounts,
-                [discount.itemId]: discount
+                [discount.itemId]: normalizedDiscount
             });
         } else {
+            // Apply to full order - normalize the discount format
+            const normalizedDiscount = {
+                ...discount,
+                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                discountAmount: Math.round(discount.amount * 100) / 100 // Add for compatibility
+            };
+            
             // Apply to full order
-            setActivePromotion(discount);
+            setActivePromotion(normalizedDiscount);
         }
-        calculateTotals();
+        
+        // Force recalculation
+        setTimeout(() => {
+            calculateTotals();
+        }, 0);
     };
 
     // Add openDiscountModal function
@@ -2061,20 +2086,12 @@ const PosIndex = ({ auth }) => {
                                                 name: `Article gratuit: ${selectedProduct.name}`
                                             };
                                             
-                                            // Confirm with user
-                                            showConfirm(
-                                                `Rendre gratuit l'article "${selectedProduct.name}" ?`,
-                                                (confirmed) => {
-                                                    if (confirmed) {
-                                                        setItemDiscounts({
-                                                            ...itemDiscounts,
-                                                            [selectedProduct.id]: discount
-                                                        });
-                                                        calculateTotals();
-                                                    }
-                                                },
-                                                'Confirmation'
-                                            );
+                                            // Apply free directly without confirmation
+                                            setItemDiscounts({
+                                                ...itemDiscounts,
+                                                [selectedProduct.id]: discount
+                                            });
+                                            calculateTotals();
                                         }}
                                         className="flex items-center gap-1 text-sm font-medium text-green-600 hover:text-green-800"
                                     >
@@ -2132,6 +2149,25 @@ const PosIndex = ({ auth }) => {
                                                 </div>
                                                 <div className="text-gray-600 text-xs">
                                                     {formatPrice(item.unit_price || item.price)} x {item.quantity}
+                                                    {itemDiscounts[item.product_id] && (
+                                                        <span className="ml-1">
+                                                            ⟶ {
+                                                                itemDiscounts[item.product_id].type === 'percentage' && 
+                                                                itemDiscounts[item.product_id].value >= 100 ? 
+                                                                '0.00' : 
+                                                                (() => {
+                                                                    let price = item.unit_price || item.price;
+                                                                    const discount = itemDiscounts[item.product_id];
+                                                                    if (discount.type === 'percentage') {
+                                                                        price = price * (1 - discount.value / 100);
+                                                                    } else if (discount.type === 'fixed') {
+                                                                        price = Math.max(0, price - (discount.amount / item.quantity));
+                                                                    }
+                                                                    return formatPrice(price);
+                                                                })()
+                                                            } MAD
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {item.notes && (
                                                     <div className="text-xs text-gray-500 italic">
@@ -2239,13 +2275,21 @@ const PosIndex = ({ auth }) => {
                                 {activePromotion && (
                                     <div className="flex justify-between text-xs text-green-600">
                                         <span className="truncate">{activePromotion.name}</span>
-                                        <span>-{activePromotion.amount.toFixed(2)}</span>
+                                        <span>-{(activePromotion.amount || activePromotion.discountAmount || 0).toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="h-px bg-gray-200 my-1"></div>
                                 <div className="flex justify-between text-sm font-bold text-blue-900">
                                     <span>Total</span>
                                     <span>{total.toFixed(2)} MAD</span>
+                                </div>
+                                <div className="flex justify-center">
+                                    <button 
+                                        onClick={() => calculateTotals()}
+                                        className="px-3 py-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full mt-1"
+                                    >
+                                        Mise à jour
+                                    </button>
                                 </div>
                             </div>
                         </div>
