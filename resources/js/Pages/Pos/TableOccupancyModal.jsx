@@ -67,104 +67,95 @@ export default function TableOccupancyModal({ isOpen, onClose, onSave, tableId, 
         onClose();
     };
 
+    const handleCancelOrder = () => {
+        onSave(tableId, numberOfPeople, true);
+        onClose();
+    };
+
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                    <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-                </div>
-
-                <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">&#8203;</span>
-
-                <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
-                    <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div className="sm:flex sm:items-start">
-                            <div className="mt-3 w-full text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 className="text-lg font-medium leading-6 text-gray-900">
-                                    {isOccupied ? 'Modify Table Occupancy' : 'Set Table Occupancy'}
-                                </h3>
-                                <div className="mt-4">
-                                    <p className="text-sm text-gray-500">
-                                        {isOccupied 
-                                            ? `Table #${tableId} is already occupied. You can modify the number of people or cancel the order.` 
-                                            : `Please enter the number of people for Table #${tableId}.`}
-                                    </p>
-                                    <div className="mt-6 flex flex-col items-center justify-center">
-                                        {/* Direct input field */}
-                                        <div className="mb-4 w-full max-w-xs">
-                                            <label htmlFor="numberOfPeople" className="block text-sm font-medium text-gray-700 mb-1 text-center">
-                                                Number of People (1-20)
-                                            </label>
-                                            <input
-                                                type="text"
-                                                id="numberOfPeople"
-                                                value={inputValue}
-                                                onChange={handleInputChange}
-                                                onBlur={handleInputBlur}
-                                                onKeyDown={handleKeyDown}
-                                                className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full text-center sm:text-lg border-gray-300 rounded-md py-3 font-bold"
-                                                placeholder="Enter number"
-                                                autoFocus
-                                            />
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg overflow-hidden shadow-xl transform transition-all sm:max-w-lg sm:w-full">
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div className="sm:flex sm:items-start">
+                        <div className="mt-3 w-full text-center sm:mt-0 sm:ml-4 sm:text-left">
+                            <h3 className="text-lg font-medium leading-6 text-gray-900">
+                                {isOccupied ? 'Modifier l\'occupation de la table' : 'Réserver la table'}
+                            </h3>
+                            <div className="mt-4">
+                                <div className="mb-4">
+                                    <div className={`p-4 rounded-lg mb-4 ${isOccupied ? 'bg-red-100 border border-red-300' : 'bg-green-100 border border-green-300'}`}>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <span className="text-2xl font-bold">Table #{tableId}</span>
+                                                <p className="text-sm text-gray-600 mt-1">
+                                                    {isOccupied 
+                                                        ? 'Cette table est actuellement occupée.' 
+                                                        : 'Cette table est disponible.'}
+                                                </p>
+                                            </div>
+                                            <div className={`h-12 w-12 rounded-full ${isOccupied ? 'bg-red-400' : 'bg-green-400'} flex items-center justify-center`}>
+                                                <span className="text-white text-xl font-bold">
+                                                    {isOccupied ? 'O' : 'D'}
+                                                </span>
+                                            </div>
                                         </div>
-
-                                        {/* Plus/minus controls */}
-                                        <div className="flex items-center justify-center mt-2">
-                                            <button
-                                                type="button"
-                                                onClick={handleDecrement}
-                                                className="rounded-full bg-gray-200 p-2 text-gray-700 hover:bg-gray-300"
-                                            >
-                                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                                                </svg>
-                                            </button>
-                                            <span className="mx-6 w-16 text-center text-2xl font-bold">
-                                                {numberOfPeople}
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={handleIncrement}
-                                                className="rounded-full bg-gray-200 p-2 text-gray-700 hover:bg-gray-300"
-                                            >
-                                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12M6 12h12" />
-                                                </svg>
-                                            </button>
-                                        </div>
+                                    </div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Nombre de personnes
+                                    </label>
+                                    <div className="mt-1 flex rounded-md shadow-sm">
+                                        <button
+                                            type="button"
+                                            onClick={handleDecrement}
+                                            className="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-gray-50 text-gray-500 text-sm font-medium hover:bg-gray-100"
+                                        >
+                                            -
+                                        </button>
+                                        <input
+                                            type="text"
+                                            value={inputValue}
+                                            onChange={handleInputChange}
+                                            onBlur={handleInputBlur}
+                                            onKeyDown={handleKeyDown}
+                                            className="focus:ring-indigo-500 focus:border-indigo-500 block w-full text-center border-l-0 border-r-0 border-gray-300 sm:text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleIncrement}
+                                            className="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-gray-50 text-gray-500 text-sm font-medium hover:bg-gray-100"
+                                        >
+                                            +
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    >
+                        {isOccupied ? 'Mettre à jour' : 'Réserver la table'}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    >
+                        Annuler
+                    </button>
+                    {isOccupied && (
                         <button
                             type="button"
-                            className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
-                            onClick={handleSave}
+                            onClick={handleCancelOrder}
+                            className="mt-3 w-full inline-flex justify-center rounded-md border border-red-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-red-700 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:mt-0 sm:w-auto sm:text-sm"
                         >
-                            {isOccupied ? 'Update' : 'Confirm'}
+                            Libérer la table
                         </button>
-                        <button
-                            type="button"
-                            className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-                            onClick={handleCancel}
-                        >
-                            Cancel
-                        </button>
-                        {isOccupied && (
-                            <button
-                                type="button"
-                                className="mt-3 inline-flex w-full justify-center rounded-md border border-red-300 bg-red-50 px-4 py-2 text-base font-medium text-red-700 shadow-sm hover:bg-red-100 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm"
-                                onClick={() => {
-                                    onSave(tableId, numberOfPeople, true);
-                                    onClose();
-                                }}
-                            >
-                                Cancel Order
-                            </button>
-                        )}
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
