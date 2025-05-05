@@ -8,6 +8,7 @@ import PromotionModal from './PromotionModal';
 import CustomizeModal from './CustomizeModal';
 import PaymentModal from './PaymentModal';
 import TableOccupancyModal from './TableOccupancyModal';
+import Modal from '@/Components/Modal';
 import { 
     DocumentTextIcon, 
     ShoppingCartIcon, 
@@ -1158,6 +1159,9 @@ const PosIndex = ({ auth }) => {
     const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [itemDiscounts, setItemDiscounts] = useState({});
     const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
+    const [showTicketModal, setShowTicketModal] = useState(false);
+    const [showFreeItemModal, setShowFreeItemModal] = useState(false);
+    const [selectedFreeItem, setSelectedFreeItem] = useState(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1968,6 +1972,49 @@ const PosIndex = ({ auth }) => {
         setShowDiscountModal(true);
     };
 
+    const handleTicketToggle = () => {
+        // Toggle ticket generation for current order
+        setActiveOrders(activeOrders.map(order => 
+            order.id === activeOrderId
+                ? { ...order, generateTicket: !order.generateTicket }
+                : order
+        ));
+        setShowTicketModal(false);
+    };
+
+    const handleMakeItemFree = (target) => {
+        if (target === 'order') {
+            // Apply 100% discount to the entire order
+            const orderDiscount = {
+                type: 'percentage',
+                value: 100,
+                amount: subtotal,
+                target: 'order',
+                name: 'Commande gratuite'
+            };
+            setActivePromotion(orderDiscount);
+        } else if (target === 'item' && selectedProduct) {
+            // Apply 100% discount to the selected item
+            const itemDiscount = {
+                type: 'percentage',
+                value: 100,
+                amount: selectedProduct.price * (cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0),
+                target: 'item',
+                itemId: selectedProduct.id,
+                name: `Article gratuit: ${selectedProduct.name}`
+            };
+            setItemDiscounts({
+                ...itemDiscounts,
+                [selectedProduct.id]: itemDiscount
+            });
+        } else {
+            showAlert('Veuillez sélectionner un article d\'abord', 'Information');
+        }
+        
+        setShowFreeItemModal(false);
+        calculateTotals();
+    };
+
     return (
         <>
             <Head title="Système de Caisse" />
@@ -2016,93 +2063,59 @@ const PosIndex = ({ auth }) => {
                                         <ClockIcon className="h-4 w-4" />
                                         Historique
                                     </button>
-                                    {activeOrderId && (
-                                    <button 
-                                        onClick={() => cancelOrder(activeOrderId)}
-                                        className="flex items-center gap-1 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-full shadow text-red-700 font-semibold text-xs transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                        <span>Annuler</span>
-                                    </button>
-                                )}
                                 </div>
                             </div>
-                            {/* Status Indicators */}
-                            <div className="flex gap-2 mt-1">
-                                {activeOrderId && (
-                                <div className="flex items-center bg-white rounded-md px-2 py-1 shadow-sm">
-                                    <span className="text-sm font-medium text-gray-700 mr-2">Ticket</span>
-                                    <button 
-                                        onClick={() => {
-                                            // Toggle ticket generation for current order
-                                            setActiveOrders(activeOrders.map(order => 
-                                                order.id === activeOrderId
-                                                    ? { ...order, generateTicket: !order.generateTicket }
-                                                    : order
-                                            ));
-                                        }}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-blue-600' : 'bg-gray-200'}`}
-                                        disabled={!activeOrderId}
-                                    >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                    <span className="text-sm text-gray-500 ml-2">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
+                            
+                            {/* Order Command Header - Blue style similar to the image */}
+                            {activeOrderId && (
+                                <div className="bg-blue-600 p-2 rounded-md mt-2 mb-1">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <span className="text-xs text-blue-200">Commande sur place</span>
+                                                <div className="text-base font-bold">{activeOrderId}</div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => setShowTicketModal(true)}
+                                                    className={`px-2 py-1 rounded-md flex items-center ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-green-500 text-white' : 'bg-white text-gray-600'}`}
+                                                    title="Ticket"
+                                                >
+                                                    <DocumentTextIcon className="h-4 w-4" />
+                                                    <span className="text-xs ml-1">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => openDiscountModal()}
+                                                    className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50"
+                                                    title="Remise"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => setShowFreeItemModal(true)}
+                                                    className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50"
+                                                    title="Gratuit"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => cancelOrder(activeOrderId)}
+                                                    className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                                                    title="Annuler"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                )}
-                                
-                                {activeOrderId && (
-                                <div className="flex items-center bg-white rounded-md px-2 py-1 shadow-sm">
-                                    <button 
-                                        onClick={() => openDiscountModal()}
-                                        className="flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span>Remise</span>
-                                    </button>
-                                </div>
-                                )}
-                                
-                                {activeOrderId && selectedProduct && (
-                                <div className="flex items-center bg-white rounded-md px-2 py-1 shadow-sm">
-                                    <button 
-                                        onClick={() => {
-                                            // Set selected item as free
-                                            if (!selectedProduct) {
-                                                showAlert('Veuillez sélectionner un article d\'abord', 'Information');
-                                                return;
-                                            }
-                                            
-                                            // Apply 100% discount to the item
-                                            const discount = {
-                                                type: 'percentage',
-                                                value: 100,
-                                                amount: selectedProduct.price * (cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0),
-                                                target: 'item',
-                                                itemId: selectedProduct.id,
-                                                name: `Article gratuit: ${selectedProduct.name}`
-                                            };
-                                            
-                                            // Apply free directly without confirmation
-                                            setItemDiscounts({
-                                                ...itemDiscounts,
-                                                [selectedProduct.id]: discount
-                                            });
-                                            calculateTotals();
-                                        }}
-                                        className="flex items-center gap-1 text-sm font-medium text-green-600 hover:text-green-800"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
-                                        </svg>
-                                        <span>Gratuit</span>
-                                    </button>
-                                </div>
-                                )}
-                            </div>
+                            )}
                         </div>
 
                         {/* Cart Items - More compact display */}
@@ -3126,6 +3139,61 @@ const PosIndex = ({ auth }) => {
                 selectedItem={selectedDiscountItem}
                 subtotal={subtotal}
             />
+            {/* Ticket Modal */}
+            <Modal show={showTicketModal} onClose={() => setShowTicketModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Préférence Ticket</h2>
+                    <p className="mb-4">Voulez-vous activer l'impression du ticket?</p>
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={() => setShowTicketModal(false)}
+                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleTicketToggle}
+                            className="bg-blue-600 text-white px-4 py-2 rounded"
+                        >
+                            {activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'Désactiver' : 'Activer'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Free Item Modal */}
+            <Modal show={showFreeItemModal} onClose={() => setShowFreeItemModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Article Gratuit</h2>
+                    <p className="mb-4">Que souhaitez-vous rendre gratuit?</p>
+                    
+                    <div className="flex flex-col space-y-3 mb-4">
+                        <button
+                            onClick={() => handleMakeItemFree('order')}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                            Commande entière
+                        </button>
+                        <button
+                            onClick={() => handleMakeItemFree('item')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            disabled={!selectedProduct}
+                        >
+                            Article sélectionné
+                            {selectedProduct && <span className="ml-1">({selectedProduct.name})</span>}
+                        </button>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => setShowFreeItemModal(false)}
+                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+                        >
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 };
