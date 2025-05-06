@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\TestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +16,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-}); 
+// Get authenticated user (requires authentication)
+Route::middleware('auth:sanctum')->get('/user', [UserController::class, 'currentUser']);
+
+// Get all users for login dropdown - this is publicly accessible
+Route::get('/users', [UserController::class, 'index']); 
+
+// Test route for debugging
+Route::get('/test-users', [TestController::class, 'testUsers']); 
