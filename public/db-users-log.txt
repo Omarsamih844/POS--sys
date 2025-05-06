@@ -82,3 +82,11 @@
 2025-05-05 15:32:41 - Successfully fetched 2 users
 2025-05-05 15:34:14 - Direct DB access attempted
 2025-05-05 15:34:14 - Successfully fetched 2 users
+2025-05-05 15:43:22 - Direct DB access attempted
+2025-05-05 15:43:22 - Successfully fetched 2 users
+2025-05-05 15:44:01 - Direct DB access attempted
+2025-05-05 15:44:02 - Successfully fetched 2 users
+2025-05-05 20:59:42 - Direct DB access attempted
+2025-05-05 20:59:42 - Successfully fetched 2 users
+2025-05-05 21:05:32 - Direct DB access attempted
+2025-05-05 21:05:32 - Successfully fetched 2 users

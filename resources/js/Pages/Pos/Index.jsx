@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
+import { useAuth } from '@/Contexts/AuthContext';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ServiceTypeModal from './ServiceTypeModal';
 import NoteModal from './NoteModal';
@@ -8,6 +9,10 @@ import PromotionModal from './PromotionModal';
 import CustomizeModal from './CustomizeModal';
 import PaymentModal from './PaymentModal';
 import TableOccupancyModal from './TableOccupancyModal';
+import Modal from '@/Components/Modal';
+import ProtectedRoute from '@/Components/ProtectedRoute';
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+
 import { 
     DocumentTextIcon, 
     ShoppingCartIcon, 
@@ -25,185 +30,8 @@ import {
     ChevronRightIcon,
     QueueListIcon
 } from '@heroicons/react/24/solid';
-import { jsPDF } from 'jspdf';
-import { useAuth } from '@/Contexts/AuthContext';
-import ProtectedRoute from '@/Components/ProtectedRoute';
-
-// OrderDetailsModal Component
-const OrderDetailsModal = ({ isOpen, onClose, order }) => {
-    if (!isOpen || !order) return null;
-    
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-3/4 max-w-4xl max-h-[80vh] flex flex-col">
-                <div className="p-4 border-b flex justify-between items-center bg-blue-700 text-white rounded-t-lg">
-                    <h2 className="text-xl font-bold">Détails de la commande: {order.id}</h2>
-                    <button 
-                        onClick={onClose}
-                        className="text-white hover:text-gray-200"
-                    >
-                        <XMarkIcon className="h-6 w-6" />
-                    </button>
-                </div>
-                <div className="p-4 overflow-auto flex-grow">
-                    {/* Order Information */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-700 mb-2">Informations de commande</h3>
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Date:</span>
-                                    <span className="font-medium">{order.timestamp}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Type:</span>
-                                    <span className="font-medium">
-                                        {order.type === 'eat_in' ? 'Sur Place' : order.type === 'takeout' ? 'À Emporter' : 'Livraison'}
-                                        {order.table_number && ` - Table ${order.table_number}`}
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Statut:</span>
-                                    <span className={`font-medium px-2 py-1 rounded-full text-xs ${
-                                        order.status === 'paid' 
-                                            ? 'bg-green-100 text-green-800' 
-                                            : order.status === 'pending'
-                                                ? 'bg-yellow-100 text-yellow-800'
-                                                : 'bg-red-100 text-red-800'
-                                    }`}>
-                                        {order.status === 'paid' ? 'Payée' : order.status === 'pending' ? 'En cours' : 'Annulée'}
-                                    </span>
-                                </div>
-                                {order.cashier && (
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Caissier:</span>
-                                        <span className="font-medium">{order.cashier}</span>
-                                    </div>
-                                )}
-                                {order.type === 'eat_in' && order.tableUsage && (
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Durée d'occupation:</span>
-                                        <span className="font-medium">{order.tableUsage.formatted || '00:00'}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                            <h3 className="font-semibold text-gray-700 mb-2">Totaux</h3>
-                            <div className="space-y-2">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">Sous-total:</span>
-                                    <span className="font-medium">{order.subtotal.toFixed(2)} MAD</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-600">TVA (20%):</span>
-                                    <span className="font-medium">{order.tax.toFixed(2)} MAD</span>
-                                </div>
-                                {order.promotion && (
-                                    <div className="flex justify-between text-green-600">
-                                        <span>Promotion ({order.promotion.name}):</span>
-                                        <span>-{order.promotion.discountAmount.toFixed(2)} MAD</span>
-                                    </div>
-                                )}
-                                <div className="border-t border-gray-300 my-2"></div>
-                                <div className="flex justify-between font-bold">
-                                    <span>Total:</span>
-                                    <span>{order.total.toFixed(2)} MAD</span>
-                                </div>
-                                {order.payment && (
-                                    <>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600">Méthode de paiement:</span>
-                                            <span className="font-medium capitalize">{order.payment.method}</span>
-                                        </div>
-                                        {order.payment.method === 'cash' && (
-                                            <>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">Montant reçu:</span>
-                                                    <span className="font-medium">{order.payment.details.amount.toFixed(2)} MAD</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">Monnaie:</span>
-                                                    <span className="font-medium">{(order.payment.details.amount - order.total).toFixed(2)} MAD</span>
-                                                </div>
-                                            </>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Items */}
-                    <div className="bg-white rounded-lg border border-gray-200 mb-4">
-                        <h3 className="font-semibold text-gray-800 px-4 py-3 border-b">Articles</h3>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Article</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix unitaire</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {order.items.map((item, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                {item.name}
-                                                {item.customizations && (
-                                                    <div className="text-xs text-gray-500 mt-1">
-                                                        {Object.entries(item.customizations.options || {}).map(([key, value]) => (
-                                                            <div key={key}>- {key}: {value}</div>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.quantity}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.unit_price.toFixed(2)} MAD</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">{(item.quantity * item.unit_price).toFixed(2)} MAD</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    {/* Notes */}
-                    {order.notes && (
-                        <div className="bg-white rounded-lg border border-gray-200 p-4">
-                            <h3 className="font-semibold text-gray-800 mb-2">Notes</h3>
-                            <p className="text-gray-600">{order.notes}</p>
-                        </div>
-                    )}
-                </div>
-                <div className="border-t border-gray-200 p-4 bg-gray-50 rounded-b-lg flex justify-end">
-                    <div className="flex gap-4">
-                        {order.status === 'paid' && (
-                            <button 
-                                onClick={() => {
-                                    const receiptGenerator = Receipt();
-                                    receiptGenerator.generateReceipt(order);
-                                }}
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center"
-                            >
-                                <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
-                                Imprimer reçu
-                            </button>
-                        )}
-                        <button
-                            onClick={onClose}
-                            className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-                        >
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+import OrderDetailsModal from './OrderDetailsModal';
+import DiscountModal from './DiscountModal';
 
 // ActiveOrdersModal Component
 const ActiveOrdersModal = ({ isOpen, onClose, activeOrders, activeOrderId, onOrderSelect }) => {
@@ -373,7 +201,7 @@ const CategoryCards = ({ onCategorySelect, menuData }) => {
     const categoryColors = {
         1: "#FF9AA2", // Plats Principaux - Soft red
         2: "#FFB7B2", // Entrées - Soft salmon
-        3: "FFDAC1", // Desserts - Soft peach
+        3: "#FFDAC1", // Desserts - Soft peach
         4: "#E2F0CB", // Boissons Non-Alcoolisées - Soft green
         5: "#B5EAD7", // Boissons Alcoolisées - Soft mint
         6: "#C7CEEA", // Snacks - Soft blue
@@ -507,6 +335,16 @@ const PosIndex = ({ auth: propAuth }) => {
     const userName = userInfo?.first_name && userInfo?.last_name 
         ? `${userInfo.first_name} ${userInfo.last_name}`
         : userInfo?.name || userInfo?.email || 'Utilisateur';
+    
+    // Handle user logout
+    const handleLogout = () => {
+        if (typeof logout === 'function') {
+            logout();
+        } else {
+            console.warn('Logout function not available');
+            window.location.href = '/logout';
+        }
+    };
         
     // Static Categories Data
     const [categories] = useState([
@@ -1341,6 +1179,11 @@ const PosIndex = ({ auth: propAuth }) => {
     const [ordersReadyForPayment, setOrdersReadyForPayment] = useState({});
     const [showOrders, setShowOrders] = useState(false);
     const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
+    const [showDiscountModal, setShowDiscountModal] = useState(false);
+    const [itemDiscounts, setItemDiscounts] = useState({});
+    const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
+    const [showFreeItemModal, setShowFreeItemModal] = useState(false);
+    const [selectedFreeItem, setSelectedFreeItem] = useState(null);
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -1424,6 +1267,7 @@ const PosIndex = ({ auth: propAuth }) => {
     };
 
     const calculateTotals = () => {
+        // Calculate subtotal with proper rounding
         const newSubtotal = cart.reduce((sum, item) => {
             let itemTotal = item.quantity * (item.price || item.unit_price);
             
@@ -1432,29 +1276,55 @@ const PosIndex = ({ auth: propAuth }) => {
                 itemTotal += customizations[item.product_id].extraCharge * item.quantity;
             }
             
-            return sum + itemTotal;
+            // Apply item-specific discount if any
+            if (itemDiscounts[item.product_id]) {
+                const discount = itemDiscounts[item.product_id];
+                if (discount.type === 'percentage') {
+                    // If discount is 100%, item should be completely free
+                    if (discount.value >= 100) {
+                        itemTotal = 0;
+                    } else {
+                        // Apply percentage discount with proper rounding
+                        itemTotal = Math.round((itemTotal * (1 - discount.value / 100)) * 100) / 100;
+                    }
+                } else if (discount.type === 'fixed') {
+                    // If fixed discount is greater than or equal to item total, item is free
+                    if (discount.amount >= itemTotal) {
+                        itemTotal = 0;
+                    } else {
+                        // Apply fixed discount with proper rounding
+                        itemTotal = Math.round((itemTotal - discount.amount) * 100) / 100;
+                    }
+                }
+            }
+            
+            // Round to 2 decimal places
+            return Math.round((sum + itemTotal) * 100) / 100;
         }, 0);
 
-        const newTax = newSubtotal * 0.20; // 20% tax
-        let newTotal = newSubtotal + newTax;
+        // Calculate tax with proper rounding
+        const newTax = Math.round(newSubtotal * 0.20 * 100) / 100; // 20% tax
+        let newTotal = Math.round((newSubtotal + newTax) * 100) / 100;
         
         // Add delivery surcharge if delivery is selected
         if (orderType === 'delivery') {
-            const surcharge = newSubtotal * 0.10;
+            const surcharge = Math.round(newSubtotal * 0.10 * 100) / 100;
             setDeliverySurcharge(surcharge);
-            newTotal += surcharge;
+            newTotal = Math.round((newTotal + surcharge) * 100) / 100;
         } else {
             setDeliverySurcharge(0);
         }
 
-        // Apply promotion discount if active
+        // Apply promotion or order discount if active
         if (activePromotion) {
-            newTotal -= activePromotion.discountAmount;
+            // Handle both discount formats (for backward compatibility)
+            const discountAmount = activePromotion.amount || activePromotion.discountAmount || 0;
+            newTotal = Math.max(0, Math.round((newTotal - discountAmount) * 100) / 100);
         }
 
-        setSubtotal(newSubtotal);
-        setTax(newTax);
-        setTotal(newTotal);
+        setSubtotal(Math.round(newSubtotal * 100) / 100);
+        setTax(Math.round(newTax * 100) / 100);
+        setTotal(Math.round(newTotal * 100) / 100);
     };
 
     const addToCart = (productId, customizations = null) => {
@@ -1551,7 +1421,8 @@ const PosIndex = ({ auth: propAuth }) => {
             }),
             subtotal: 0,
             tax: 0,
-            total: 0
+            total: 0,
+            generateTicket: true // Default to generating ticket
         };
         
         // Add to active orders and set as current
@@ -1582,6 +1453,9 @@ const PosIndex = ({ auth: propAuth }) => {
             setOrderType(orderToLoad.type || 'takeout');
             setTableNumber(orderToLoad.table_number || '');
             setNotes(orderToLoad.notes || '');
+            // Load discounts
+            setItemDiscounts(orderToLoad.itemDiscounts || {});
+            setActivePromotion(orderToLoad.orderDiscount || null);
             // Recalculate will happen via useEffect
         }
     };
@@ -1600,7 +1474,10 @@ const PosIndex = ({ auth: propAuth }) => {
                     subtotal: subtotal,
                     tax: tax,
                     total: total,
-                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1
+                    numberOfPeople: tableOccupancies[tableNumber] || order.numberOfPeople || 1,
+                    generateTicket: order.generateTicket, // Preserve ticket generation setting
+                    itemDiscounts: itemDiscounts, // Save item discounts
+                    orderDiscount: activePromotion // Save order discount
                 }
                 : order
         ));
@@ -1665,13 +1542,14 @@ const PosIndex = ({ auth: propAuth }) => {
                 id: currentOrder.id.startsWith('TEMP-') 
                     ? `ORD-${String(orderNumber).padStart(4, '0')}` 
                     : currentOrder.id,
-                cashier: auth.user.name,
+                cashier: userName,
                 items: cart.map(item => ({
                     name: item.name,
                     quantity: item.quantity,
                     unit_price: item.unit_price || item.price || 0, // Use unit_price or price, fallback to 0
                     subtotal: item.quantity * (item.unit_price || item.price || 0),
-                    customizations: customizations[item.product_id]
+                    customizations: customizations[item.product_id],
+                    discount: itemDiscounts[item.product_id] || null
                 })),
                 type: orderType,
                 table_number: tableNumber,
@@ -1686,13 +1564,16 @@ const PosIndex = ({ auth: propAuth }) => {
                     details: payment.details,
                     amount: amount
                 },
-                promotion: activePromotion
+                promotion: activePromotion,
+                generateTicket: currentOrder.generateTicket // Transfer ticket generation setting
             };
 
             // Generate the receipt
             try {
-                const receiptGenerator = Receipt();
-                receiptGenerator.generateReceipt(finalOrder);
+                if (currentOrder.generateTicket) {
+                    const receiptGenerator = Receipt();
+                    receiptGenerator.generateReceipt(finalOrder);
+                }
             } catch (receiptError) {
                 console.error('Error generating receipt:', receiptError);
                 // Continue the process even if receipt generation fails
@@ -1714,6 +1595,7 @@ const PosIndex = ({ auth: propAuth }) => {
             setPaymentAmount(0);
             setChange(0);
             setActivePromotion(null);
+            setItemDiscounts({});
             setCustomizations({});
             setSelectedProduct(null);
             setShowPaymentModal(false);
@@ -2086,12 +1968,106 @@ const PosIndex = ({ auth: propAuth }) => {
         setShowOrderDetailsModal(true);
     };
 
-    const handleLogout = async () => {
-        await logout();
+    // Add handleDiscountApply function
+    const handleDiscountApply = (discount) => {
+        if (discount.target === 'item' && discount.itemId) {
+            // Apply to specific item - normalize the discount format
+            const normalizedDiscount = {
+                ...discount,
+                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                value: parseFloat(discount.value)
+            };
+
+            // Apply to specific item
+            setItemDiscounts({
+                ...itemDiscounts,
+                [discount.itemId]: normalizedDiscount
+            });
+        } else {
+            // Apply to full order - normalize the discount format
+            const normalizedDiscount = {
+                ...discount,
+                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                discountAmount: Math.round(discount.amount * 100) / 100 // Add for compatibility
+            };
+            
+            // Apply to full order
+            setActivePromotion(normalizedDiscount);
+        }
+        
+        // Force recalculation
+        setTimeout(() => {
+            calculateTotals();
+        }, 0);
     };
 
+    // Add openDiscountModal function
+    const openDiscountModal = (item = null) => {
+        if (!activeOrderId) {
+            showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
+            return;
+        }
+        setSelectedDiscountItem(item);
+        setShowDiscountModal(true);
+    };
+
+    const handleMakeItemFree = (target) => {
+        if (target === 'order') {
+            // Apply 100% discount to the entire order
+            const orderDiscount = {
+                type: 'percentage',
+                value: 100,
+                amount: subtotal,
+                target: 'order',
+                name: 'Commande gratuite'
+            };
+            setActivePromotion(orderDiscount);
+        } else if (target === 'item' && selectedProduct) {
+            // Apply 100% discount to the selected item
+            const itemDiscount = {
+                type: 'percentage',
+                value: 100,
+                amount: selectedProduct.price * (cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0),
+                target: 'item',
+                itemId: selectedProduct.id,
+                name: `Article gratuit: ${selectedProduct.name}`
+            };
+            setItemDiscounts({
+                ...itemDiscounts,
+                [selectedProduct.id]: itemDiscount
+            });
+        } else {
+            showAlert('Veuillez sélectionner un article d\'abord', 'Information');
+        }
+        
+        setShowFreeItemModal(false);
+        calculateTotals();
+    };
+
+    // Add an event listener to close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            const remiseDropdown = document.getElementById('remiseDropdown');
+            const gratuitDropdown = document.getElementById('gratuitDropdown');
+            
+            if (remiseDropdown && !event.target.closest('.remise-container')) {
+                remiseDropdown.classList.add('hidden');
+            }
+            
+            if (gratuitDropdown && !event.target.closest('.gratuit-container')) {
+                gratuitDropdown.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, []);
+
     return (
-        <ProtectedRoute>
+        <>
             <Head title="Système de Caisse" />
             <div className="min-h-screen bg-gray-100">
                 <Head title="Point of Sale" />
@@ -2140,28 +2116,132 @@ const PosIndex = ({ auth: propAuth }) => {
                                     </button>
                                 </div>
                             </div>
-                            {/* Status Indicators */}
-                            <div className="flex gap-2 mt-1">
-                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-700 font-semibold text-xs">
-                                    <span>Produits :</span>
-                                    <span className="text-base">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                            
+                            {/* Order Command Header - Blue style similar to the image */}
+                            {activeOrderId && (
+                                <div className="bg-blue-600 p-2 rounded-md mt-2 mb-1">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <span className="text-xs text-blue-200">Commande sur place</span>
+                                                <div className="text-base font-bold">{activeOrderId}</div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    onClick={() => {
+                                                        // Toggle ticket setting directly
+                                                        setActiveOrders(activeOrders.map(order => 
+                                                            order.id === activeOrderId
+                                                                ? { ...order, generateTicket: !order.generateTicket }
+                                                                : order
+                                                        ));
+                                                    }}
+                                                    className={`px-2 py-1 rounded-md flex items-center ${activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                                                    title="Ticket"
+                                                >
+                                                    <DocumentTextIcon className="h-4 w-4" />
+                                                    <span className="text-xs ml-1">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
+                                                </button>
+                                                <div className="relative remise-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (!selectedProduct && cart.length === 0) {
+                                                                showAlert('Ajoutez des articles ou sélectionnez un article pour appliquer une remise', 'Information');
+                                                                return;
+                                                            }
+                                                            const dropdown = document.getElementById('remiseDropdown');
+                                                            dropdown.classList.toggle('hidden');
+                                                            e.stopPropagation();
+                                                        }}
+                                                        className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50"
+                                                        title="Remise"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                    </button>
+                                                    <div id="remiseDropdown" className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 hidden">
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('remiseDropdown').classList.add('hidden');
+                                                                if (selectedProduct) {
+                                                                    openDiscountModal(cart.find(item => item.product_id === selectedProduct.id));
+                                                                } else {
+                                                                    showAlert('Sélectionnez un article d\'abord', 'Information');
+                                                                }
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-blue-100 w-full rounded-t-md"
+                                                        >
+                                                            Article
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('remiseDropdown').classList.add('hidden');
+                                                                openDiscountModal();
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-blue-100 w-full rounded-b-md"
+                                                        >
+                                                            Commande
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="relative gratuit-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            if (!selectedProduct && cart.length === 0) {
+                                                                showAlert('Ajoutez des articles ou sélectionnez un article pour le rendre gratuit', 'Information');
+                                                                return;
+                                                            }
+                                                            const dropdown = document.getElementById('gratuitDropdown');
+                                                            dropdown.classList.toggle('hidden');
+                                                            e.stopPropagation();
+                                                        }}
+                                                        className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50"
+                                                        title="Gratuit"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
+                                                        </svg>
+                                                    </button>
+                                                    <div id="gratuitDropdown" className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10 hidden">
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('gratuitDropdown').classList.add('hidden');
+                                                                if (selectedProduct) {
+                                                                    handleMakeItemFree('item');
+                                                                } else {
+                                                                    showAlert('Sélectionnez un article d\'abord', 'Information');
+                                                                }
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-green-100 w-full rounded-t-md"
+                                                        >
+                                                            Article
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                document.getElementById('gratuitDropdown').classList.add('hidden');
+                                                                handleMakeItemFree('order');
+                                                            }}
+                                                            className="block px-4 py-2 text-xs text-left text-gray-700 hover:bg-green-100 w-full rounded-b-md"
+                                                        >
+                                                            Commande
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => cancelOrder(activeOrderId)}
+                                                    className="bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                                                    title="Annuler"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1 bg-white/60 px-2 py-1 rounded-full shadow text-blue-900 font-semibold text-xs">
-                                    <span>Total:</span>
-                                    <span className="text-base">{total.toFixed(2)} MAD</span>
-                                </div>
-                                {activeOrderId && (
-                                    <button 
-                                        onClick={() => cancelOrder(activeOrderId)}
-                                        className="flex items-center gap-1 bg-red-100 hover:bg-red-200 px-2 py-1 rounded-full shadow text-red-700 font-semibold text-xs transition-colors"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                        <span>Annuler</span>
-                                    </button>
-                                )}
-                            </div>
+                            )}
                         </div>
 
                         {/* Orders Button */}
@@ -2215,7 +2295,14 @@ const PosIndex = ({ auth: propAuth }) => {
                         <div className="flex-1 overflow-auto px-2 py-2">
                             {cart.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <ShoppingCartIcon className="h-12 w-12 mb-2" />
+                                    {/* <ShoppingCartIcon className="h-12 w-12 mb-2" /> */}
+                                    <DotLottieReact
+                                    className="h-20 w-32 mb-1 text-gray-500 "
+                                    src="https://lottie.host/2c33af02-1a9b-469c-8c3f-a9de5005fae3/IasMtb1nNU.lottie"
+                                    loop
+                                    speed="2"
+                                    autoplay
+                                    />
                                     <p className="text-base font-medium">Le panier est vide</p>
                                     <p className="text-xs">Ajoutez des produits depuis la grille</p>
                                 </div>
@@ -2238,42 +2325,74 @@ const PosIndex = ({ auth: propAuth }) => {
                                             `}
                                         >
                                             <div className="flex-1 pr-2">
-                                                <div className="font-medium text-sm">{item.name}</div>
+                                                <div className="font-medium text-sm">
+                                                    {item.name}
+                                                    {itemDiscounts[item.product_id] && (
+                                                        <span className={`ml-2 text-xs font-normal ${
+                                                            itemDiscounts[item.product_id].type === 'percentage' && 
+                                                            itemDiscounts[item.product_id].value >= 100 ? 
+                                                            'text-red-600 font-semibold' : 'text-green-600'
+                                                        }`}>
+                                                            {itemDiscounts[item.product_id].type === 'percentage' && 
+                                                             itemDiscounts[item.product_id].value >= 100 ? 
+                                                             '(GRATUIT)' : 
+                                                             `(-${itemDiscounts[item.product_id].type === 'percentage' 
+                                                                ? itemDiscounts[item.product_id].value + '%' 
+                                                                : itemDiscounts[item.product_id].amount.toFixed(2) + ' MAD'})`}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="text-gray-600 text-xs">
-                                                    {formatPrice(item.unit_price || item.price)} x {item.quantity}
+                                                    {formatPrice(item.unit_price || item.price)}
+                                                    {itemDiscounts[item.product_id] && (
+                                                        <span className="ml-1">
+                                                            ⟶ {
+                                                                itemDiscounts[item.product_id].type === 'percentage' && 
+                                                                itemDiscounts[item.product_id].value >= 100 ? 
+                                                                '0.00' : 
+                                                                (() => {
+                                                                    let price = item.unit_price || item.price;
+                                                                    const discount = itemDiscounts[item.product_id];
+                                                                    if (discount.type === 'percentage') {
+                                                                        price = price * (1 - discount.value / 100);
+                                                                    } else if (discount.type === 'fixed') {
+                                                                        price = Math.max(0, price - (discount.amount / item.quantity));
+                                                                    }
+                                                                    return formatPrice(price);
+                                                                })()
+                                                            } MAD
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {item.notes && (
                                                     <div className="text-xs text-gray-500 italic">
                                                         Note: {item.notes}
                                                     </div>
                                                 )}
-                                            </div>
-                                            <div className="flex items-center space-x-1">
-                                                <div className="font-bold text-gray-800 text-sm">
-                                                    {formatPrice((item.unit_price || item.price) * item.quantity)}
+                                            </div>  
+                                            <div className="flex items-center space-x-2">
+                                                <div className="font-bold text-gray-800 text-sm mr-1">
+                                                    {itemDiscounts[item.product_id] && 
+                                                    ((itemDiscounts[item.product_id].type === 'percentage' && 
+                                                      itemDiscounts[item.product_id].value >= 100) ||
+                                                     (itemDiscounts[item.product_id].type === 'fixed' && 
+                                                      itemDiscounts[item.product_id].amount >= (item.unit_price || item.price) * item.quantity)) ? 
+                                                     '0.00 MAD' :
+                                                     formatPrice(
+                                                         itemDiscounts[item.product_id]
+                                                             ? itemDiscounts[item.product_id].type === 'percentage'
+                                                                ? (item.unit_price || item.price) * item.quantity * (1 - itemDiscounts[item.product_id].value / 100)
+                                                                : (item.unit_price || item.price) * item.quantity - itemDiscounts[item.product_id].amount
+                                                            : (item.unit_price || item.price) * item.quantity
+                                                     )
+                                                    }
                                                 </div>
-                                                <div className="flex flex-col space-y-1">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
-                                                            if (product) {
-                                                                setSelectedProduct(product);
-                                                                setShowCustomizeModal(true); // Open update modal
-                                                            }
-                                                        }}
-                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
-                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                    >
-                                                        <PencilIcon className="h-5 w-5 text-blue-500" />
-                                                    </button>
+                                                <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (item.quantity > 1) {
-                                                                setDeleteTarget({ product_id: item.product_id, quantity: item.quantity });
-                                                                setDeleteQty(1);
-                                                                setShowDeleteQtyModal(true);
+                                                                updateQuantity(item.product_id, item.quantity - 1);
                                                             } else {
                                                                 showConfirm(
                                                                     "Êtes-vous sûr de vouloir supprimer ce produit du panier ?",
@@ -2289,13 +2408,40 @@ const PosIndex = ({ auth: propAuth }) => {
                                                                 );
                                                             }
                                                         }}
-                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
-                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                        title="Supprimer"
+                                                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
                                                     >
-                                                        <TrashIcon className="h-5 w-5 text-red-500" />
+                                                        -
+                                                    </button>
+                                                    <span className="px-2 py-1 min-w-[30px] text-center font-medium">{item.quantity}</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updateQuantity(item.product_id, item.quantity + 1);
+                                                        }}
+                                                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700"
+                                                    >
+                                                        +
                                                     </button>
                                                 </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openDiscountModal(item)
+                                                    }}
+                                                    className="p-1 rounded hover:bg-gray-100"
+                                                    title="Appliquer une remise"
+                                                >
+                                                    <svg 
+                                                        fill="#00FF00" 
+                                                        width="24px" 
+                                                        height="24px" 
+                                                        viewBox="0 0 24 24" 
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="w-5 h-5 text-gray-600"
+                                                    >
+                                                        <path d="M12,1A11,11,0,1,0,23,12,11.013,11.013,0,0,0,12,1Zm0,20a9,9,0,1,1,9-9A9.01,9.01,0,0,1,12,21ZM16.707,8.707l-8,8a1,1,0,1,1-1.414-1.414l8-8a1,1,0,1,1,1.414,1.414ZM6.5,8.5a2,2,0,1,1,2,2A2,2,0,0,1,6.5,8.5Zm11,7a2,2,0,1,1-2-2A2,2,0,0,1,17.5,15.5Z"/>
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
@@ -2322,7 +2468,7 @@ const PosIndex = ({ auth: propAuth }) => {
                                 {activePromotion && (
                                     <div className="flex justify-between text-xs text-green-600">
                                         <span className="truncate">{activePromotion.name}</span>
-                                        <span>-{activePromotion.discountAmount.toFixed(2)}</span>
+                                        <span>-{(activePromotion.amount || activePromotion.discountAmount || 0).toFixed(2)}</span>
                                     </div>
                                 )}
                                 <div className="h-px bg-gray-200 my-1"></div>
@@ -2330,88 +2476,98 @@ const PosIndex = ({ auth: propAuth }) => {
                                     <span>Total</span>
                                     <span>{total.toFixed(2)} MAD</span>
                                 </div>
+                                    {/* <div className="flex justify-center">
+                                        <button 
+                                            onClick={() => calculateTotals()}
+                                            className="px-3 py-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full mt-1"
+                                        >
+                                            Mise à jour
+                                        </button>
+                                    </div> */}
                             </div>
                         </div>
                         {/* Numeric Keypad - traditional calculator layout */}
                         <div className="border-t border-gray-200 bg-gray-50 p-2">
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-4 gap-1.5">
                                 <div className="col-span-3">
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-3 gap-1.5">
                                         <button 
                                             onClick={() => handleKeypadInput(7)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             7
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(8)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             8
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(9)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             9
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(4)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             4
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(5)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             5
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(6)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             6
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(1)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             1
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(2)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             2
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(3)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             3
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(0)}
-                                            className="flex items-center justify-center text-2xl font-bold bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             0
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput('CE')}
-                                            className="flex items-center justify-center text-2xl font-bold bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-sm font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             CE
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput('⌫')}
-                                            className="flex items-center justify-center text-2xl font-bold bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-14 shadow"
+                                            className="flex items-center justify-center text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors h-10 shadow-sm"
                                         >
-                                            ⌫
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M11 10L15 14M11 14L15 10M2.7716 13.5185L7.43827 17.5185C7.80075 17.8292 8.26243 18 8.73985 18H18C19.1046 18 20 17.1046 20 16V8C20 6.89543 19.1046 6 18 6H8.73985C8.26243 6 7.80075 6.17078 7.43827 6.48149L2.7716 10.4815C1.84038 11.2797 1.84038 12.7203 2.7716 13.5185Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-3">
+                                <div className="flex flex-col gap-1.5">
                                     <button
                                         onClick={() => {
                                             if (selectedProduct) {
@@ -2419,9 +2575,11 @@ const PosIndex = ({ auth: propAuth }) => {
                                                 updateQuantity(selectedProduct.id, currentQty + 1);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-2xl font-bold bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors h-14 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors h-10 shadow-sm"
                                     >
-                                        +
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
                                     </button>
                                     <button 
                                         onClick={() => {
@@ -2432,9 +2590,11 @@ const PosIndex = ({ auth: propAuth }) => {
                                                 }
                                             }
                                         }}
-                                        className="flex items-center justify-center text-2xl font-bold bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded transition-colors h-14 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg transition-colors h-10 shadow-sm"
                                     >
-                                        -
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                                        </svg>
                                     </button>
                                     <button 
                                         onClick={() => {
@@ -2443,15 +2603,17 @@ const PosIndex = ({ auth: propAuth }) => {
                                                 setSelectedProduct(null);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-2xl font-bold bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-14 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors h-10 shadow-sm"
                                     >
                                         C
                                     </button>
                                     <button 
                                         onClick={() => setShowPaymentModal(true)}
-                                        className="flex items-center justify-center text-2xl font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-1 rounded shadow-md h-14"
+                                        className="flex items-center justify-center text-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-1 rounded-lg shadow-sm h-10"
                                     >
-                                        ↵
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M20 7V8.2C20 9.88016 20 10.7202 19.673 11.362C19.3854 11.9265 18.9265 12.3854 18.362 12.673C17.7202 13 16.8802 13 15.2 13H4M4 13L8 9M4 13L8 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
@@ -2866,10 +3028,14 @@ const PosIndex = ({ auth: propAuth }) => {
                                                                 {order.status === 'paid' && (
                                                                     <button 
                                                                         onClick={() => {
-                                                                            const receiptGenerator = Receipt();
-                                                                            receiptGenerator.generateReceipt(order);
+                                                                            if (order.generateTicket) {
+                                                                                const receiptGenerator = Receipt();
+                                                                                receiptGenerator.generateReceipt(order);
+                                                                            } else {
+                                                                                showAlert('La génération de ticket est désactivée pour cette commande', 'Information');
+                                                                            }
                                                                         }}
-                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                        className={`px-2 py-1 rounded ${order.generateTicket ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
                                                                     >
                                                                         Imprimer
                                                                     </button>
@@ -2994,10 +3160,14 @@ const PosIndex = ({ auth: propAuth }) => {
                                                                     </button>
                                                                     <button 
                                                                         onClick={() => {
-                                                                            const receiptGenerator = Receipt();
-                                                                            receiptGenerator.generateReceipt(order);
+                                                                            if (order.generateTicket) {
+                                                                                const receiptGenerator = Receipt();
+                                                                                receiptGenerator.generateReceipt(order);
+                                                                            } else {
+                                                                                showAlert('La génération de ticket est désactivée pour cette commande', 'Information');
+                                                                            }
                                                                         }}
-                                                                        className="px-2 py-1 bg-green-600 text-white rounded"
+                                                                        className={`px-2 py-1 rounded ${order.generateTicket ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'}`}
                                                                     >
                                                                         Imprimer
                                                                     </button>
@@ -3171,7 +3341,47 @@ const PosIndex = ({ auth: propAuth }) => {
                 onClose={() => setShowOrderDetailsModal(false)}
                 order={selectedOrderDetails}
             />
-        </ProtectedRoute>
+            <DiscountModal
+                isOpen={showDiscountModal}
+                onClose={() => setShowDiscountModal(false)}
+                onApply={handleDiscountApply}
+                selectedItem={selectedDiscountItem}
+                subtotal={subtotal}
+            />
+            {/* Free Item Modal */}
+            <Modal show={showFreeItemModal} onClose={() => setShowFreeItemModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Article Gratuit</h2>
+                    <p className="mb-4">Que souhaitez-vous rendre gratuit?</p>
+                    
+                    <div className="flex flex-col space-y-3 mb-4">
+                        <button
+                            onClick={() => handleMakeItemFree('order')}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                            Commande entière
+                        </button>
+                        <button
+                            onClick={() => handleMakeItemFree('item')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                            disabled={!selectedProduct}
+                        >
+                            Article sélectionné
+                            {selectedProduct && <span className="ml-1">({selectedProduct.name})</span>}
+                        </button>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                        <button
+                            onClick={() => setShowFreeItemModal(false)}
+                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+                        >
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        </>
     );
 };
 
