@@ -2643,12 +2643,12 @@ const PosIndex = ({ auth: propAuth }) => {
                                 <div className="flex items-center justify-between">
                                     {/* Left: Tab Buttons */}
                                     <div className="flex items-center">
-                                        <button 
+                                        {/* <button 
                                             onClick={() => setActiveTab('tables')} 
                                             className={`px-4 py-2 mr-2 rounded-md ${activeTab === 'tables' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                                         >
                                             Tables
-                                        </button>
+                                        </button> */}
                                         <button 
                                             onClick={() => setActiveTab('caisse')} 
                                             className={`px-4 py-2 rounded-md ${activeTab === 'caisse' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
