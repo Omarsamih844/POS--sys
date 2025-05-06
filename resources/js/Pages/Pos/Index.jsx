@@ -161,9 +161,9 @@ const ProductGrid = ({ categoryId, onProductSelect, menuData }) => {
                         <h3 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors duration-300 truncate">{product.name}</h3>
                         <div className="mt-1 flex justify-between items-center">
                             <span className="text-sm font-bold text-blue-600">{product.price.toFixed(2)} MAD</span>
-                            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium hover:bg-blue-700">
+                            {/* <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium hover:bg-blue-700">
                                 +
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
