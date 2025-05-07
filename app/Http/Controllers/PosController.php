@@ -17,6 +17,14 @@ class PosController extends Controller
 {
     public function index()
     {
+        // Get all users for the login dropdown
+        $users = \App\Models\User::select('id', 'first_name', 'last_name', 'email')
+            ->orderBy('first_name')
+            ->get();
+            
+        // Log how many users are being passed to the view
+        \Illuminate\Support\Facades\Log::info('PosController passing ' . count($users) . ' users to view');
+            
         // Map the Categorie model to match the expected format in the frontend
         $categories = Categorie::where('categorie_est_activee', true)
             ->get()
@@ -53,7 +61,11 @@ class PosController extends Controller
 
         return Inertia::render('Pos/Index', [
             'categories' => $categories,
-            'products' => $products
+            'products' => $products,
+            'auth' => [
+                'user' => Auth::user()
+            ],
+            'users' => $users,
         ]);
     }
 

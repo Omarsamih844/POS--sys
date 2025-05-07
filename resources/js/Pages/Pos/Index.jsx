@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Head } from '@inertiajs/react';
+import { useAuth } from '@/Contexts/AuthContext';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import ServiceTypeModal from './ServiceTypeModal';
 import NoteModal from './NoteModal';
@@ -9,6 +10,9 @@ import CustomizeModal from './CustomizeModal';
 import PaymentModal from './PaymentModal';
 import TableOccupancyModal from './TableOccupancyModal';
 import Modal from '@/Components/Modal';
+import ProtectedRoute from '@/Components/ProtectedRoute';
+import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+
 import { 
     DocumentTextIcon, 
     ShoppingCartIcon, 
@@ -22,6 +26,8 @@ import {
     ClipboardDocumentIcon,
     ClockIcon,
     XMarkIcon,
+    ArrowUpTrayIcon,
+    ChevronRightIcon,
     QueueListIcon
 } from '@heroicons/react/24/solid';
 import OrderDetailsModal from './OrderDetailsModal';
@@ -155,9 +161,9 @@ const ProductGrid = ({ categoryId, onProductSelect, menuData }) => {
                         <h3 className="font-semibold text-sm text-gray-900 group-hover:text-blue-600 transition-colors duration-300 truncate">{product.name}</h3>
                         <div className="mt-1 flex justify-between items-center">
                             <span className="text-sm font-bold text-blue-600">{product.price.toFixed(2)} MAD</span>
-                            <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium hover:bg-blue-700">
+                            {/* <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-blue-600 text-white px-2 py-0.5 rounded-full text-xs font-medium hover:bg-blue-700">
                                 +
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
@@ -195,7 +201,7 @@ const CategoryCards = ({ onCategorySelect, menuData }) => {
     const categoryColors = {
         1: "#FF9AA2", // Plats Principaux - Soft red
         2: "#FFB7B2", // Entrées - Soft salmon
-        3: "FFDAC1", // Desserts - Soft peach
+        3: "#FFDAC1", // Desserts - Soft peach
         4: "#E2F0CB", // Boissons Non-Alcoolisées - Soft green
         5: "#B5EAD7", // Boissons Alcoolisées - Soft mint
         6: "#C7CEEA", // Snacks - Soft blue
@@ -319,11 +325,26 @@ const ProductSection = ({ onProductSelect, activeCategory, menuData }) => {
     );
 };
 
-const PosIndex = ({ auth }) => {
+const PosIndex = ({ auth: propAuth }) => {
+    const { user: authUser, logout } = useAuth();
+    
+    // Use context auth first, fallback to props (for SSR)
+    const userInfo = authUser || propAuth?.user;
+    
     // User name for display
-    const userName = auth.user.first_name && auth.user.last_name 
-        ? `${auth.user.first_name} ${auth.user.last_name}`
-        : auth.user.name || auth.user.email;
+    const userName = userInfo?.first_name && userInfo?.last_name 
+        ? `${userInfo.first_name} ${userInfo.last_name}`
+        : userInfo?.name || userInfo?.email || 'Utilisateur';
+    
+    // Handle user logout
+    const handleLogout = () => {
+        if (typeof logout === 'function') {
+            logout();
+        } else {
+            console.warn('Logout function not available');
+            window.location.href = '/logout';
+        }
+    };
         
     // Static Categories Data
     const [categories] = useState([
@@ -1134,6 +1155,8 @@ const PosIndex = ({ auth }) => {
     const [tableStartTimes, setTableStartTimes] = useState({});
     const [tableTimers, setTableTimers] = useState({});
     const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
+    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
     const [tables, setTables] = useState([
         { id: '1', status: 'available' },
         { id: '2', status: 'available' },
@@ -1153,9 +1176,9 @@ const PosIndex = ({ auth }) => {
     const [deleteTarget, setDeleteTarget] = useState(null); // { product_id, quantity }
     const [deleteQty, setDeleteQty] = useState(1);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [ordersReadyForPayment, setOrdersReadyForPayment] = useState({});
+    const [showOrders, setShowOrders] = useState(false);
     const [showActiveOrdersModal, setShowActiveOrdersModal] = useState(false);
-    const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
-    const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
     const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [itemDiscounts, setItemDiscounts] = useState({});
     const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
@@ -1538,7 +1561,7 @@ const PosIndex = ({ auth }) => {
                 id: currentOrder.id.startsWith('TEMP-') 
                     ? `ORD-${String(orderNumber).padStart(4, '0')}` 
                     : currentOrder.id,
-                cashier: auth.user.name,
+                cashier: userName,
                 items: cart.map(item => ({
                     name: item.name,
                     quantity: item.quantity,
@@ -1785,7 +1808,7 @@ const PosIndex = ({ auth }) => {
         
         // Mark tables with active orders as occupied
         activeOrders.forEach(order => {
-            if (order.status === 'pending' && order.table_number) {
+            if ((order.status === 'pending' || order.status === 'in_progress') && order.table_number) {
                 const tableIndex = updatedTables.findIndex(t => t.id === order.table_number);
                 if (tableIndex >= 0) {
                     updatedTables[tableIndex].status = 'occupied';
@@ -1843,17 +1866,34 @@ const PosIndex = ({ auth }) => {
     };
 
     // Add a new function to handle table occupancy
-    const handleTableOccupancySave = (tableId, numberOfPeople, cancelOrder = false) => {
+    const handleTableOccupancySave = (tableId, numberOfPeople, shouldCancelOrder = false) => {
         setShowTableOccupancyModal(false);
 
-        if (cancelOrder) {
+        if (shouldCancelOrder) {
             // Cancel the order for this table
             const orderToCancel = activeOrders.find(order => 
-                order.status === 'pending' && order.table_number === tableId
+                (order.status === 'pending' || order.status === 'in_progress') && order.table_number === tableId
             );
             
             if (orderToCancel) {
-                cancelOrder(orderToCancel.id);
+                // Call the global cancelOrder function by explicitly referring to it
+                const orderIdToCancel = orderToCancel.id;
+                showConfirm('Êtes-vous sûr de vouloir annuler cette commande?', (confirmed) => {
+                    if (confirmed) {
+                        // Update order status to cancelled
+                        setActiveOrders(activeOrders.map(order => 
+                            order.id === orderIdToCancel
+                                ? { ...order, status: 'cancelled' } // Annulée
+                                : order
+                        ));
+                        
+                        // If cancelling the active order, clear the cart
+                        if (orderIdToCancel === activeOrderId) {
+                            setCart([]);
+                            setActiveOrderId(null);
+                        }
+                    }
+                });
             }
             
             // Update the tableOccupancies
@@ -2230,11 +2270,65 @@ const PosIndex = ({ auth }) => {
                             )}
                         </div>
 
+                        {/* Orders Button */}
+                        
+
+                        {/* Orders Modal */}
+                        {showOrders && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-lg shadow-xl p-4 w-full max-w-md">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-semibold text-gray-900">Commandes en cours</h3>
+                                        <button
+                                            onClick={() => setShowOrders(false)}
+                                            className="text-gray-400 hover:text-gray-500"
+                                        >
+                                            <XMarkIcon className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {orders.filter(order => order.status === 'in_progress').map(order => (
+                                            <div
+                                                key={order.id}
+                                                onClick={() => {
+                                                    switchToOrder(order.id);
+                                                    setShowOrders(false);
+                                                }}
+                                                className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="bg-yellow-200 p-2 rounded">
+                                                        <ClipboardDocumentIcon className="h-5 w-5 text-yellow-700" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-yellow-800">
+                                                            {order.type === 'eat_in' ? `Table ${order.table_number}` : order.type}
+                                                        </div>
+                                                        <div className="text-xs text-yellow-600">
+                                                            {order.items.reduce((sum, item) => sum + item.quantity, 0)} articles
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <ChevronRightIcon className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Cart Items - More compact display */}
                         <div className="flex-1 overflow-auto px-2 py-2">
                             {cart.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                    <ShoppingCartIcon className="h-12 w-12 mb-2" />
+                                    {/* <ShoppingCartIcon className="h-12 w-12 mb-2" /> */}
+                                    <DotLottieReact
+                                    className="h-20 w-32 mb-1 text-gray-500 "
+                                    src="https://lottie.host/2c33af02-1a9b-469c-8c3f-a9de5005fae3/IasMtb1nNU.lottie"
+                                    loop
+                                    speed="2"
+                                    autoplay
+                                    />
                                     <p className="text-base font-medium">Le panier est vide</p>
                                     <p className="text-xs">Ajoutez des produits depuis la grille</p>
                                 </div>
@@ -2250,9 +2344,11 @@ const PosIndex = ({ auth }) => {
                                                     setStartNewInput(true);
                                                 }
                                             }}
-                                            className={`bg-white rounded-lg shadow p-2 flex justify-between items-center cursor-pointer transition-colors ${
-                                                selectedProduct?.id === item.product_id ? 'bg-blue-50 border-l-4 border-l-blue-500 pl-2' : ''
-                                            }`}
+                                            className={`bg-white rounded-lg shadow p-2 flex justify-between items-center cursor-pointer transition-colors
+                                                ${selectedProduct?.id === item.product_id 
+                                                    ? 'bg-blue-50 border-l-4 border-blue-500 pl-2' 
+                                                    : ''}
+                                            `}
                                         >
                                             <div className="flex-1 pr-2">
                                                 <div className="font-medium text-sm">
@@ -2273,7 +2369,7 @@ const PosIndex = ({ auth }) => {
                                                     )}
                                                 </div>
                                                 <div className="text-gray-600 text-xs">
-                                                    {formatPrice(item.unit_price || item.price)} x {item.quantity}
+                                                    {formatPrice(item.unit_price || item.price)}
                                                     {itemDiscounts[item.product_id] && (
                                                         <span className="ml-1">
                                                             ⟶ {
@@ -2299,9 +2395,9 @@ const PosIndex = ({ auth }) => {
                                                         Note: {item.notes}
                                                     </div>
                                                 )}
-                                            </div>
-                                            <div className="flex items-center space-x-1">
-                                                <div className="font-bold text-gray-800 text-sm">
+                                            </div>  
+                                            <div className="flex items-center space-x-2">
+                                                <div className="font-bold text-gray-800 text-sm mr-1">
                                                     {itemDiscounts[item.product_id] && 
                                                     ((itemDiscounts[item.product_id].type === 'percentage' && 
                                                       itemDiscounts[item.product_id].value >= 100) ||
@@ -2317,41 +2413,12 @@ const PosIndex = ({ auth }) => {
                                                      )
                                                     }
                                                 </div>
-                                                <div className="flex flex-col space-y-1">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
-                                                            if (product) {
-                                                                setSelectedProduct(product);
-                                                                setShowCustomizeModal(true); // Open update modal
-                                                            }
-                                                        }}
-                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
-                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                    >
-                                                        <PencilIcon className="h-5 w-5 text-blue-500" />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            openDiscountModal(item);
-                                                        }}
-                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
-                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                        title="Appliquer une remise"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                    </button>
+                                                <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (item.quantity > 1) {
-                                                                setDeleteTarget({ product_id: item.product_id, quantity: item.quantity });
-                                                                setDeleteQty(1);
-                                                                setShowDeleteQtyModal(true);
+                                                                updateQuantity(item.product_id, item.quantity - 1);
                                                             } else {
                                                                 showConfirm(
                                                                     "Êtes-vous sûr de vouloir supprimer ce produit du panier ?",
@@ -2367,13 +2434,40 @@ const PosIndex = ({ auth }) => {
                                                                 );
                                                             }
                                                         }}
-                                                        className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
-                                                        style={{ minWidth: 0, minHeight: 0, padding: 0 }}
-                                                        title="Supprimer"
+                                                        className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
                                                     >
-                                                        <TrashIcon className="h-5 w-5 text-red-500" />
+                                                        -
+                                                    </button>
+                                                    <span className="px-2 py-1 min-w-[30px] text-center font-medium">{item.quantity}</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updateQuantity(item.product_id, item.quantity + 1);
+                                                        }}
+                                                        className="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700"
+                                                    >
+                                                        +
                                                     </button>
                                                 </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        openDiscountModal(item)
+                                                    }}
+                                                    className="p-1 rounded hover:bg-gray-100"
+                                                    title="Appliquer une remise"
+                                                >
+                                                    <svg 
+                                                        fill="#00FF00" 
+                                                        width="24px" 
+                                                        height="24px" 
+                                                        viewBox="0 0 24 24" 
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="w-5 h-5 text-gray-600"
+                                                    >
+                                                        <path d="M12,1A11,11,0,1,0,23,12,11.013,11.013,0,0,0,12,1Zm0,20a9,9,0,1,1,9-9A9.01,9.01,0,0,1,12,21ZM16.707,8.707l-8,8a1,1,0,1,1-1.414-1.414l8-8a1,1,0,1,1,1.414,1.414ZM6.5,8.5a2,2,0,1,1,2,2A2,2,0,0,1,6.5,8.5Zm11,7a2,2,0,1,1-2-2A2,2,0,0,1,17.5,15.5Z"/>
+                                                    </svg>
+                                                </button>
                                             </div>
                                         </div>
                                     ))}
@@ -2408,88 +2502,98 @@ const PosIndex = ({ auth }) => {
                                     <span>Total</span>
                                     <span>{total.toFixed(2)} MAD</span>
                                 </div>
+                                    {/* <div className="flex justify-center">
+                                        <button 
+                                            onClick={() => calculateTotals()}
+                                            className="px-3 py-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full mt-1"
+                                        >
+                                            Mise à jour
+                                        </button>
+                                    </div> */}
                             </div>
                         </div>
                         {/* Numeric Keypad - traditional calculator layout */}
                         <div className="border-t border-gray-200 bg-gray-50 p-2">
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-4 gap-1.5">
                                 <div className="col-span-3">
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button 
-                                            onClick={() => handleKeypadInput(1)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
-                                        >
-                                            1
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(2)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
-                                        >
-                                            2
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(3)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
-                                        >
-                                            3
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(4)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
-                                        >
-                                            4
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(5)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
-                                        >
-                                            5
-                                        </button>
-                                        <button 
-                                            onClick={() => handleKeypadInput(6)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
-                                        >
-                                            6
-                                        </button>
+                                    <div className="grid grid-cols-3 gap-1.5">
                                         <button 
                                             onClick={() => handleKeypadInput(7)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             7
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(8)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             8
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput(9)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             9
                                         </button>
                                         <button 
+                                            onClick={() => handleKeypadInput(4)}
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
+                                        >
+                                            4
+                                        </button>
+                                        <button 
+                                            onClick={() => handleKeypadInput(5)}
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
+                                        >
+                                            5
+                                        </button>
+                                        <button 
+                                            onClick={() => handleKeypadInput(6)}
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
+                                        >
+                                            6
+                                        </button>
+                                        <button 
+                                            onClick={() => handleKeypadInput(1)}
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
+                                        >
+                                            1
+                                        </button>
+                                        <button 
+                                            onClick={() => handleKeypadInput(2)}
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
+                                        >
+                                            2
+                                        </button>
+                                        <button 
+                                            onClick={() => handleKeypadInput(3)}
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
+                                        >
+                                            3
+                                        </button>
+                                        <button 
                                             onClick={() => handleKeypadInput(0)}
-                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-100 text-gray-800 rounded transition-colors h-8 shadow"
+                                            className="flex items-center justify-center text-lg font-medium bg-white hover:bg-gray-50 text-gray-800 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             0
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput('CE')}
-                                            className="flex items-center justify-center text-lg font-medium bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors h-8 shadow"
+                                            className="flex items-center justify-center text-sm font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors h-10 shadow-sm"
                                         >
                                             CE
                                         </button>
                                         <button 
                                             onClick={() => handleKeypadInput('⌫')}
-                                            className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-8 shadow"
+                                            className="flex items-center justify-center text-sm font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors h-10 shadow-sm"
                                         >
-                                            ⌫
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M11 10L15 14M11 14L15 10M2.7716 13.5185L7.43827 17.5185C7.80075 17.8292 8.26243 18 8.73985 18H18C19.1046 18 20 17.1046 20 16V8C20 6.89543 19.1046 6 18 6H8.73985C8.26243 6 7.80075 6.17078 7.43827 6.48149L2.7716 10.4815C1.84038 11.2797 1.84038 12.7203 2.7716 13.5185Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            </svg>
                                         </button>
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-2">
+                                <div className="flex flex-col gap-1.5">
                                     <button
                                         onClick={() => {
                                             if (selectedProduct) {
@@ -2497,9 +2601,11 @@ const PosIndex = ({ auth }) => {
                                                 updateQuantity(selectedProduct.id, currentQty + 1);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-green-100 hover:bg-green-200 text-green-800 rounded transition-colors h-8 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors h-10 shadow-sm"
                                     >
-                                        +
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
                                     </button>
                                     <button 
                                         onClick={() => {
@@ -2510,9 +2616,11 @@ const PosIndex = ({ auth }) => {
                                                 }
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded transition-colors h-8 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-yellow-50 hover:bg-yellow-100 text-yellow-700 rounded-lg transition-colors h-10 shadow-sm"
                                     >
-                                        -
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                                        </svg>
                                     </button>
                                     <button 
                                         onClick={() => {
@@ -2521,15 +2629,17 @@ const PosIndex = ({ auth }) => {
                                                 setSelectedProduct(null);
                                             }
                                         }}
-                                        className="flex items-center justify-center text-lg font-medium bg-red-100 hover:bg-red-200 text-red-800 rounded transition-colors h-8 shadow"
+                                        className="flex items-center justify-center text-lg font-medium bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors h-10 shadow-sm"
                                     >
                                         C
                                     </button>
                                     <button 
                                         onClick={() => setShowPaymentModal(true)}
-                                        className="flex items-center justify-center text-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-1 rounded shadow-md"
+                                        className="flex items-center justify-center text-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-1 rounded-lg shadow-sm h-10"
                                     >
-                                        ↵
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M20 7V8.2C20 9.88016 20 10.7202 19.673 11.362C19.3854 11.9265 18.9265 12.3854 18.362 12.673C17.7202 13 16.8802 13 15.2 13H4M4 13L8 9M4 13L8 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                        </svg>
                                     </button>
                                 </div>
                             </div>
@@ -2559,12 +2669,12 @@ const PosIndex = ({ auth }) => {
                                 <div className="flex items-center justify-between">
                                     {/* Left: Tab Buttons */}
                                     <div className="flex items-center">
-                                        <button 
+                                        {/* <button 
                                             onClick={() => setActiveTab('tables')} 
                                             className={`px-4 py-2 mr-2 rounded-md ${activeTab === 'tables' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                                         >
                                             Tables
-                                        </button>
+                                        </button> */}
                                         <button 
                                             onClick={() => setActiveTab('caisse')} 
                                             className={`px-4 py-2 rounded-md ${activeTab === 'caisse' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
@@ -2572,20 +2682,41 @@ const PosIndex = ({ auth }) => {
                                             Caisse
                                         </button>
                                     </div>
-                                    {/* Right: Connection Status Indicator */}
-                                    <div className={`flex items-center px-3 py-1 ml-4 rounded-full font-semibold text-sm shadow-md select-none ${isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
-                                        style={{ pointerEvents: 'none' }}
-                                    >
+                                    {/* Right: User Profile & Status */}
+                                    <div className="flex items-center">
+                                        <div className="relative group">
+                                            <div className={`flex items-center px-3 py-1 ml-4 rounded-full font-semibold text-sm shadow-md select-none ${isOnline ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} cursor-pointer`}>
                                         {isOnline ? (
-                                            <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.53 16.11a6 6 0 016.95 0M5.07 12.66a10 10 0 0113.86 0M1.64 9.21a14 14 0 0120.72 0M12 20h.01" />
-                                            </svg>
-                                        ) : (
+                                                    <div className="flex items-center">
+                                                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-2 relative">
+                                                            <span className="text-gray-700 font-bold text-sm">
+                                                                {userName.split(' ').map(name => name[0]).join('')}
+                                                            </span>
+                                                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium">{userName}</span>
+                                                            <span className="text-xs">Caissier</span>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center">
                                             <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636A9 9 0 005.636 18.364M1 1l22 22M8.53 16.11a6 6 0 016.95 0" />
                                             </svg>
-                                        )}
-                                        {isOnline ? `${userName} - Connecté` : 'Hors ligne'}
+                                                        <span>Hors ligne</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                >
+                                                    Déconnexion
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3279,4 +3410,17 @@ const PosIndex = ({ auth }) => {
         </>
     );
 };
-export default PosIndex;
+
+// Wrap PosIndex with ProtectedRoute for client-side authentication
+const ProtectedPosIndex = (props) => {
+    console.log("ProtectedPosIndex received props:", props?.users?.length || 0, "users");
+    
+    return (
+        <ProtectedRoute users={props.users}>
+            <PosIndex {...props} />
+        </ProtectedRoute>
+    );
+};
+
+// Export the protected component instead of the raw component
+export default ProtectedPosIndex;

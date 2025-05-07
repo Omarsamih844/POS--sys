@@ -7,7 +7,9 @@ import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Login({ status, canResetPassword, users }) {
+export default function Login({ status, canResetPassword, users = [] }) {
+    console.log("Login page rendered with", users.length, "users");
+
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -152,7 +154,7 @@ export default function Login({ status, canResetPassword, users }) {
                                     />
                 </div>
 
-                                <div className="flex items-center justify-between">
+                                {/* <div className="flex items-center justify-between">
                                     <label className="flex items-center group">
                         <Checkbox
                             name="remember"
@@ -178,7 +180,7 @@ export default function Login({ status, canResetPassword, users }) {
                                             Forgot password?
                         </Link>
                     )}
-                                </div>
+                                </div> */}
 
                                 <div>
                                     <PrimaryButton
