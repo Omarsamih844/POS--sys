@@ -1176,7 +1176,7 @@ const PosIndex = ({ auth }) => {
     useEffect(() => {
         calculateTotals();
         updateCounts();
-    }, [cart, orderType]);
+    }, [cart, orderType, itemDiscounts, activePromotion]);
 
     // Set up a timer to update the elapsed time for each table
     useEffect(() => {
@@ -1244,6 +1244,9 @@ const PosIndex = ({ auth }) => {
     };
 
     const calculateTotals = () => {
+        console.log("Calculating totals with itemDiscounts:", itemDiscounts);
+        console.log("Active promotion:", activePromotion);
+
         // Calculate subtotal with proper rounding
         const newSubtotal = cart.reduce((sum, item) => {
             let itemTotal = item.quantity * (item.price || item.unit_price);
@@ -1254,8 +1257,9 @@ const PosIndex = ({ auth }) => {
             }
             
             // Apply item-specific discount if any
-            if (itemDiscounts[item.product_id]) {
-                const discount = itemDiscounts[item.product_id];
+            const currentItemDiscounts = itemDiscounts; // Use direct reference to current state
+            if (currentItemDiscounts[item.product_id]) {
+                const discount = currentItemDiscounts[item.product_id];
                 if (discount.type === 'percentage') {
                     // If discount is 100%, item should be completely free
                     if (discount.value >= 100) {
@@ -1293,16 +1297,31 @@ const PosIndex = ({ auth }) => {
         }
 
         // Apply promotion or order discount if active
-        if (activePromotion) {
+        const currentPromotion = activePromotion; // Use direct reference to current state
+        if (currentPromotion) {
             // Handle both discount formats (for backward compatibility)
-            const discountAmount = activePromotion.amount || activePromotion.discountAmount || 0;
+            const discountAmount = currentPromotion.amount || currentPromotion.discountAmount || 0;
             newTotal = Math.max(0, Math.round((newTotal - discountAmount) * 100) / 100);
         }
 
         setSubtotal(Math.round(newSubtotal * 100) / 100);
         setTax(Math.round(newTax * 100) / 100);
         setTotal(Math.round(newTotal * 100) / 100);
+        
+        // Force a re-render through a small state change
+        setStartNewInput(prev => prev);
     };
+
+    // Replace the discount-specific useEffect with a more robust one
+    useEffect(() => {
+        // We'll trigger calculations any time the cart, order type, discounts, or promotions change
+        // Use a short timeout to ensure state updates are processed
+        const timer = setTimeout(() => {
+            calculateTotals();
+        }, 10);
+        
+        return () => clearTimeout(timer);
+    }, [cart, orderType, JSON.stringify(itemDiscounts), activePromotion]);
 
     const addToCart = (productId, customizations = null) => {
         if (!activeOrderId) {
@@ -1928,37 +1947,34 @@ const PosIndex = ({ auth }) => {
         setShowOrderDetailsModal(true);
     };
 
-    // Add handleDiscountApply function
+    // Update the handleDiscountApply function to make it more robust
     const handleDiscountApply = (discount) => {
         if (discount.target === 'item' && discount.itemId) {
-            // Apply to specific item - normalize the discount format
+            // Apply to specific item
             const normalizedDiscount = {
                 ...discount,
-                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
+                amount: Math.round(discount.amount * 100) / 100,
                 value: parseFloat(discount.value)
             };
 
-            // Apply to specific item
-            setItemDiscounts({
-                ...itemDiscounts,
-                [discount.itemId]: normalizedDiscount
-            });
+            // Create a completely new object to ensure React detects the change
+            const newItemDiscounts = {...itemDiscounts};
+            newItemDiscounts[discount.itemId] = normalizedDiscount;
+            setItemDiscounts(newItemDiscounts);
         } else {
-            // Apply to full order - normalize the discount format
+            // Apply to full order
             const normalizedDiscount = {
                 ...discount,
-                amount: Math.round(discount.amount * 100) / 100, // Ensure proper rounding
-                discountAmount: Math.round(discount.amount * 100) / 100 // Add for compatibility
+                amount: Math.round(discount.amount * 100) / 100,
+                discountAmount: Math.round(discount.amount * 100) / 100
             };
             
-            // Apply to full order
-            setActivePromotion(normalizedDiscount);
+            // Set the promotion
+            setActivePromotion({...normalizedDiscount});
         }
         
-        // Force recalculation
-        setTimeout(() => {
-            calculateTotals();
-        }, 0);
+        // Force immediate recalculation
+        setTimeout(calculateTotals, 50);
     };
 
     // Add openDiscountModal function
@@ -1971,6 +1987,7 @@ const PosIndex = ({ auth }) => {
         setShowDiscountModal(true);
     };
 
+    // Update handleMakeItemFree to ensure changes are always detected
     const handleMakeItemFree = (target) => {
         if (target === 'order') {
             // Apply 100% discount to the entire order
@@ -1981,7 +1998,7 @@ const PosIndex = ({ auth }) => {
                 target: 'order',
                 name: 'Commande gratuite'
             };
-            setActivePromotion(orderDiscount);
+            setActivePromotion({...orderDiscount});
         } else if (target === 'item' && selectedProduct) {
             // Apply 100% discount to the selected item
             const itemDiscount = {
@@ -1992,17 +2009,26 @@ const PosIndex = ({ auth }) => {
                 itemId: selectedProduct.id,
                 name: `Article gratuit: ${selectedProduct.name}`
             };
-            setItemDiscounts({
-                ...itemDiscounts,
-                [selectedProduct.id]: itemDiscount
-            });
+            
+            // Create a completely new object to ensure React detects the change
+            const newItemDiscounts = {...itemDiscounts};
+            newItemDiscounts[selectedProduct.id] = itemDiscount;
+            setItemDiscounts(newItemDiscounts);
         } else {
             showAlert('Veuillez sélectionner un article d\'abord', 'Information');
         }
         
         setShowFreeItemModal(false);
-        calculateTotals();
+        
+        // Force immediate recalculation
+        setTimeout(calculateTotals, 50);
     };
+
+    // Add an effect to specifically watch for discount changes and recalculate
+    useEffect(() => {
+        // This effect will run whenever itemDiscounts or activePromotion changes
+        calculateTotals();
+    }, [itemDiscounts, activePromotion]);
 
     // Add an event listener to close dropdowns when clicking outside
     useEffect(() => {
@@ -2309,7 +2335,7 @@ const PosIndex = ({ auth }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            openDiscountModal(item)
+                                                            openDiscountModal(item);
                                                         }}
                                                         className="rounded hover:bg-gray-100 flex items-center justify-center w-8 h-8"
                                                         style={{ minWidth: 0, minHeight: 0, padding: 0 }}
@@ -2381,14 +2407,6 @@ const PosIndex = ({ auth }) => {
                                 <div className="flex justify-between text-sm font-bold text-blue-900">
                                     <span>Total</span>
                                     <span>{total.toFixed(2)} MAD</span>
-                                </div>
-                                <div className="flex justify-center">
-                                    <button 
-                                        onClick={() => calculateTotals()}
-                                        className="px-3 py-1 text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full mt-1"
-                                    >
-                                        Mise à jour
-                                    </button>
                                 </div>
                             </div>
                         </div>
