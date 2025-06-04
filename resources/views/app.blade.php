@@ -3,8 +3,13 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#4F46E5">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+
+        <!-- PWA -->
+        <link rel="manifest" href="/manifest.json">
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -18,5 +23,19 @@
     </head>
     <body class="font-sans antialiased">
         @inertia
+        <script>
+            // Register Service Worker for PWA
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(function(registration) {
+                            console.log('Service Worker registered with scope:', registration.scope);
+                        })
+                        .catch(function(error) {
+                            console.error('Service Worker registration failed:', error);
+                        });
+                });
+            }
+        </script>
     </body>
 </html>

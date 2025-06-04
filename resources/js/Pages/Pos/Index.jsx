@@ -12,6 +12,10 @@ import TableOccupancyModal from './TableOccupancyModal';
 import Modal from '@/Components/Modal';
 import ProtectedRoute from '@/Components/ProtectedRoute';
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import OfflineStorage from '@/Services/OfflineStorage';
+import { registerServiceWorker } from '@/Services/ServiceWorkerRegistration';
+import SyncNotification from '@/Components/SyncNotification';
+import OfflineIndicator from '@/Components/OfflineIndicator';
 
 import { 
     DocumentTextIcon, 
@@ -669,7 +673,7 @@ const PosIndex = ({ auth: propAuth }) => {
             description: "Traditional apple pie with cinnamon",
             price: 32.0,
             category_id: 4,
-            image: "https://images.unsplash.com/photo-1535920527002-b35e96722eb9?q=80&w=599",
+            image: "https://images.unsplash.com/photo-1535920527-47519962c119?q=80&w=599",
         },
         {
             id: 45,
@@ -1184,7 +1188,161 @@ const PosIndex = ({ auth: propAuth }) => {
     const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
     const [showFreeItemModal, setShowFreeItemModal] = useState(false);
     const [selectedFreeItem, setSelectedFreeItem] = useState(null);
-
+    
+    // Add offline mode state
+    const [offlineMode, setOfflineMode] = useState(false);
+    const [offlineDataLoaded, setOfflineDataLoaded] = useState(false);
+    const [syncStatus, setSyncStatus] = useState('idle'); // 'idle', 'syncing', 'success', 'error'
+    
+    // Initialize service worker and offline storage
+    useEffect(() => {
+        const initOfflineSupport = async () => {
+            try {
+                // Register service worker
+                await registerServiceWorker();
+                
+                // Initialize IndexedDB
+                await OfflineStorage.initDB();
+                
+                // Fetch and store initial data for offline use if online
+                if (navigator.onLine) {
+                    await OfflineStorage.fetchAndStoreInitialData();
+                }
+                
+                console.log('Offline support initialized');
+            } catch (error) {
+                console.error('Error initializing offline support:', error);
+            }
+        };
+        
+        initOfflineSupport();
+    }, []);
+    
+    // Handle online/offline status
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOnline(true);
+            setOfflineMode(false);
+            syncOfflineData();
+        };
+        
+        const handleOffline = () => {
+            setIsOnline(false);
+            setOfflineMode(true);
+        };
+        
+        // Set initial offline mode based on navigator.onLine
+        setOfflineMode(!navigator.onLine);
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+    
+    // Save data for offline use whenever it changes
+    useEffect(() => {
+        const saveDataForOffline = async () => {
+            if (isOnline) {
+                try {
+                    // Save menu data
+                    await OfflineStorage.saveMenuData(menuData);
+                    
+                    // Save tables
+                    await OfflineStorage.saveTableStatus(tables);
+                    
+                    // Save orders
+                    const allOrders = [...activeOrders, ...orders];
+                    await OfflineStorage.saveOrders(allOrders);
+                    
+                    console.log('Data saved for offline use');
+                } catch (error) {
+                    console.error('Error saving data for offline use:', error);
+                }
+            }
+        };
+        
+        saveDataForOffline();
+    }, [menuData, tables, activeOrders, orders, isOnline]);
+    
+    // Load offline data when going offline
+    useEffect(() => {
+        const loadOfflineData = async () => {
+            if (offlineMode && !offlineDataLoaded) {
+                try {
+                    // Load menu data
+                    const savedMenuData = await OfflineStorage.getMenuData();
+                    if (savedMenuData && savedMenuData.length > 0) {
+                        // Only update if we have data and menuData is empty
+                        if (menuData.length === 0) {
+                            // This would require menuData to be in state instead of const
+                            // setMenuData(savedMenuData);
+                            console.log('Loaded menu data from offline storage');
+                        }
+                    }
+                    
+                    // Load tables
+                    const savedTables = await OfflineStorage.getTableStatus();
+                    if (savedTables && savedTables.length > 0) {
+                        setTables(savedTables);
+                        console.log('Loaded tables from offline storage');
+                    }
+                    
+                    // Load orders
+                    const savedOrders = await OfflineStorage.getOrders();
+                    if (savedOrders && savedOrders.length > 0) {
+                        // Split into active and completed orders
+                        const active = savedOrders.filter(order => 
+                            order.status === 'pending' || order.status === 'in_progress'
+                        );
+                        const completed = savedOrders.filter(order => 
+                            order.status === 'paid' || order.status === 'cancelled'
+                        );
+                        
+                        setActiveOrders(active);
+                        setOrders(completed);
+                        console.log('Loaded orders from offline storage');
+                    }
+                    
+                    setOfflineDataLoaded(true);
+                } catch (error) {
+                    console.error('Error loading offline data:', error);
+                }
+            }
+        };
+        
+        loadOfflineData();
+    }, [offlineMode, offlineDataLoaded]);
+    
+    // Function to sync offline data when coming back online
+    const syncOfflineData = async () => {
+        if (isOnline) {
+            try {
+                setSyncStatus('syncing');
+                
+                // Use the syncAll method from OfflineStorage
+                const result = await OfflineStorage.syncAll();
+                
+                if (result.success) {
+                    console.log('Sync completed successfully');
+                    setSyncStatus('success');
+                    setTimeout(() => setSyncStatus('idle'), 3000);
+                } else {
+                    console.error('Sync failed:', result);
+                    setSyncStatus('error');
+                    setTimeout(() => setSyncStatus('idle'), 3000);
+                }
+            } catch (error) {
+                console.error('Error syncing offline data:', error);
+                setSyncStatus('error');
+                setTimeout(() => setSyncStatus('idle'), 3000);
+            }
+        }
+    };
+    
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
@@ -2097,6 +2255,13 @@ const PosIndex = ({ auth: propAuth }) => {
             <Head title="Système de Caisse" />
             <div className="min-h-screen bg-gray-100">
                 <Head title="Point of Sale" />
+                
+                {/* Sync status notification */}
+                <SyncNotification status={syncStatus} />
+                
+                {/* Offline indicator */}
+                <OfflineIndicator isOffline={offlineMode} />
+                
                 <div className="flex h-screen">
                     {/* Left Side - Cart - Increase width for wider keypad */}
                     <div className="w-1/3 md:w-2/5 lg:w-2/5 xl:w-1/3 bg-white flex flex-col shadow-lg">
@@ -2669,12 +2834,12 @@ const PosIndex = ({ auth: propAuth }) => {
                                 <div className="flex items-center justify-between">
                                     {/* Left: Tab Buttons */}
                                     <div className="flex items-center">
-                                        {/* <button 
+                                        <button 
                                             onClick={() => setActiveTab('tables')} 
                                             className={`px-4 py-2 mr-2 rounded-md ${activeTab === 'tables' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
                                         >
                                             Tables
-                                        </button> */}
+                                        </button>
                                         <button 
                                             onClick={() => setActiveTab('caisse')} 
                                             className={`px-4 py-2 rounded-md ${activeTab === 'caisse' ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}

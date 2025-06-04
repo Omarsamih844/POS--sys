@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Apixel Caisse</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #4F46E5;
+            margin-bottom: 1rem;
+        }
+        p {
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .btn {
+            background-color: #4F46E5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 0.5rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #4338ca;
+        }
+        .btn-secondary {
+            background-color: #6B7280;
+        }
+        .btn-secondary:hover {
+            background-color: #4B5563;
+        }
+        .btn-danger {
+            background-color: #EF4444;
+        }
+        .btn-danger:hover {
+            background-color: #DC2626;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .advanced {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+        }
+        .advanced h3 {
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📶</div>
+        <h1>Vous êtes hors ligne</h1>
+        <p>Il semble que vous n'ayez pas de connexion Internet. Certaines fonctionnalités peuvent être limitées en mode hors ligne.</p>
+        <p>Le système de caisse continuera de fonctionner avec les données mises en cache, et se synchronisera automatiquement lorsque vous serez de nouveau en ligne.</p>
+        <div class="buttons">
+            <a href="/" class="btn">Accueil</a>
+            <a href="/pos" class="btn btn-secondary">Aller à la caisse</a>
+        </div>
+        
+        <div class="advanced">
+            <h3>Options avancées</h3>
+            <p>Si vous rencontrez des problèmes, vous pouvez essayer de réinitialiser le cache.</p>
+            <button id="reset-btn" class="btn btn-danger">Réinitialiser le cache</button>
+        </div>
+    </div>
+    <script>
+        // Check if we're back online
+        window.addEventListener('online', () => {
+            window.location.reload();
+        });
+        
+        // If user was trying to access POS, redirect them there
+        if (window.location.pathname.includes('/pos')) {
+            document.querySelector('.btn-secondary').classList.remove('btn-secondary');
+            document.querySelector('.btn').classList.add('btn-secondary');
+        }
+        
+        // Reset button
+        document.getElementById('reset-btn').addEventListener('click', async () => {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser le cache? Cela effacera toutes les données stockées localement.')) {
+                // Load and execute the reset script
+                const script = document.createElement('script');
+                script.src = '/reset-sw.js';
+                document.body.appendChild(script);
+            }
+        });
+    </script>
+</body>
+</html> 
