@@ -2126,6 +2126,10 @@ const PosIndex = ({ auth: propAuth }) => {
                     : order
             ));
         }
+        
+        // Redirection vers la section des catégories après avoir réservé une table
+        setActiveTab('caisse');
+        setActiveCategory(null); // Pour afficher toutes les catégories
     };
 
     // Add function to open order details modal
