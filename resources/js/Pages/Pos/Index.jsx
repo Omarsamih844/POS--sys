@@ -1733,14 +1733,20 @@ const PosIndex = ({ auth: propAuth }) => {
                     ? `ORD-${String(orderNumber).padStart(4, '0')}` 
                     : currentOrder.id,
                 cashier: userName,
-                items: cart.map(item => ({
-                    name: item.name,
-                    quantity: item.quantity,
-                    unit_price: item.unit_price || item.price || 0, // Use unit_price or price, fallback to 0
-                    subtotal: item.quantity * (item.unit_price || item.price || 0),
-                    customizations: customizations[item.product_id],
-                    discount: itemDiscounts[item.product_id] || null
-                })),
+                items: cart.map(item => {
+                    // Get the discount for this item if it exists
+                    const discount = itemDiscounts[item.product_id] || null;
+                    console.log(`Item ${item.name} discount:`, discount);
+                    
+                    return {
+                        name: item.name,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price || item.price || 0, // Use unit_price or price, fallback to 0
+                        subtotal: item.quantity * (item.unit_price || item.price || 0),
+                        customizations: customizations[item.product_id],
+                        discount: discount
+                    };
+                }),
                 type: orderType,
                 table_number: tableNumber,
                 notes,
@@ -1757,6 +1763,11 @@ const PosIndex = ({ auth: propAuth }) => {
                 promotion: activePromotion,
                 generateTicket: currentOrder.generateTicket // Transfer ticket generation setting
             };
+
+            // Debug discounts
+            console.log("Item discounts before generating receipt:", itemDiscounts);
+            console.log("Active promotion before generating receipt:", activePromotion);
+            console.log("Final order with discounts:", finalOrder);
 
             // Generate the receipt
             try {
@@ -2173,6 +2184,8 @@ const PosIndex = ({ auth: propAuth }) => {
                 value: parseFloat(discount.value)
             };
 
+            console.log("Applying item discount:", normalizedDiscount);
+
             // Create a completely new object to ensure React detects the change
             const newItemDiscounts = {...itemDiscounts};
             newItemDiscounts[discount.itemId] = normalizedDiscount;
@@ -2180,6 +2193,16 @@ const PosIndex = ({ auth: propAuth }) => {
             // Appliquer immédiatement
             setItemDiscounts(newItemDiscounts);
             calculateTotals();
+            
+            // Show confirmation
+            const item = cart.find(item => item.product_id === discount.itemId);
+            const itemName = item ? item.name : "l'article";
+            
+            if (discount.type === 'percentage') {
+                showAlert(`Remise de ${discount.value}% appliquée sur ${itemName}`, 'Succès');
+            } else {
+                showAlert(`Remise de ${discount.amount.toFixed(2)} MAD appliquée sur ${itemName}`, 'Succès');
+            }
         } else {
             // Apply to full order
             const normalizedDiscount = {
@@ -2188,9 +2211,18 @@ const PosIndex = ({ auth: propAuth }) => {
                 discountAmount: Math.round(discount.amount * 100) / 100
             };
             
+            console.log("Applying order discount:", normalizedDiscount);
+            
             // Set the promotion et appliquer immédiatement
             setActivePromotion({...normalizedDiscount});
             calculateTotals();
+            
+            // Show confirmation
+            if (discount.type === 'percentage') {
+                showAlert(`Remise de ${discount.value}% appliquée sur toute la commande`, 'Succès');
+            } else {
+                showAlert(`Remise de ${discount.amount.toFixed(2)} MAD appliquée sur toute la commande`, 'Succès');
+            }
         }
     };
 
@@ -2225,19 +2257,30 @@ const PosIndex = ({ auth: propAuth }) => {
     // et appliquer immédiatement la remise
     const handleMakeItemFree = () => {
         if (selectedProduct) {
+            // Get the quantity and price for calculation
+            const item = cart.find(item => item.product_id === selectedProduct.id);
+            const quantity = item?.quantity || 0;
+            const price = item?.price || selectedProduct.price || 0;
+            const totalAmount = price * quantity;
+            
             // Apply 100% discount to the selected item
             const itemDiscount = {
                 type: 'percentage',
                 value: 100,
-                amount: selectedProduct.price * (cart.find(item => item.product_id === selectedProduct.id)?.quantity || 0),
+                amount: totalAmount,
                 target: 'item',
                 itemId: selectedProduct.id,
                 name: `Article gratuit: ${selectedProduct.name}`
             };
             
+            console.log(`Making item free: ${selectedProduct.name}, discount:`, itemDiscount);
+            
             // Create a completely new object to ensure React detects the change
             const newItemDiscounts = {...itemDiscounts};
             newItemDiscounts[selectedProduct.id] = itemDiscount;
+            
+            // Debug the discount object
+            console.log(`Item discount object for ${selectedProduct.id}:`, newItemDiscounts[selectedProduct.id]);
             
             // Appliquer immédiatement
             setItemDiscounts(newItemDiscounts);
@@ -2245,6 +2288,9 @@ const PosIndex = ({ auth: propAuth }) => {
             
             // Close the confirmation modal
             setShowFreeItemConfirmModal(false);
+            
+            // Show confirmation to user
+            showAlert(`L'article "${selectedProduct.name}" a été rendu gratuit`, 'Succès');
         } else {
             showAlert('Veuillez sélectionner un article d\'abord', 'Information');
         }
@@ -2365,6 +2411,7 @@ const PosIndex = ({ auth: propAuth }) => {
                                                     onClick={(e) => {
                                                         if (cart.length > 0) {
                                                             // Ouvrir la modal de remise pour toute la commande
+                                                            setSelectedDiscountItem(null); // Ensure we're applying to the entire order
                                                             setShowDiscountModal(true);
                                                         } else {
                                                             showAlert('Ajoutez des articles au panier d\'abord', 'Information');
@@ -2387,7 +2434,8 @@ const PosIndex = ({ auth: propAuth }) => {
                                                                 value: 100,
                                                                 amount: subtotal,
                                                                 target: 'order',
-                                                                name: 'Commande gratuite'
+                                                                name: 'Commande gratuite',
+                                                                discountAmount: subtotal // Make sure this is set for the receipt
                                                             };
                                                             // Appliquer immédiatement
                                                             setActivePromotion({...orderDiscount});

@@ -5,13 +5,10 @@ import qrcode from 'qrcode-generator';
 const Receipt = () => {
     const generateReceipt = (order) => {
         try {
-            console.log("Starting receipt generation with order:", order);
-            
-            // Basic thermal-style receipt (small width)
-            const width = 198.45; // 7cm in points
+            // Wider thermal-style receipt
+            const width = 226.8; // 8cm in points
             const height = 250.45; // Increased height to prevent overflow
             
-            console.log("Creating PDF document with dimensions:", width, "x", height);
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'pt',
@@ -19,7 +16,6 @@ const Receipt = () => {
             });
             
             // Use monospace courier font only
-            console.log("Setting font");
             doc.setFont('helvetica', 'normal');
             
             let y = 25;
@@ -152,102 +148,115 @@ const Receipt = () => {
             doc.setFont('helvetica', 'bold');
             doc.text('BURGER HOUSE', pageWidth / 2, y, { align: 'center' });
             
-            console.log("Actual page width:", pageWidth);
-            
-            // Add logo placeholder (text based for now)
-            doc.setFontSize(14);
-            doc.setTextColor(100, 50, 100); // Purple color for the logo
-            doc.text('Your logo', pageWidth / 2, y, { align: 'center' });
+            // // Add logo placeholder (text based for now)
+            // doc.setFontSize(14);
+            // doc.setTextColor(100, 50, 100); // Purple color for the logo
+            // doc.text('Your logo', pageWidth / 2, y, { align: 'center' });
             
             y += lineHeight * 2;
             
             // Reset text color
             doc.setTextColor(0, 0, 0);
             doc.setFontSize(10);
-
-            
-            
             
             // Table info
-            const tableInfo = order.table_id ? `Table ${order.table_id}, invités: ${order.guests || 4}` : "Table 2, invités: 4";
-            doc.text(tableInfo, pageWidth / 2, y, { align: 'center' });
-            y += lineHeight * 1.5;
+            const tableInfo = order.table_number ? `Table ${order.table_number}` : "";
+            if (tableInfo) {
+                doc.text(tableInfo, pageWidth / 2, y, { align: 'center' });
+                y += lineHeight * 1.5;
+            }
             
             // Order Number - big and bold
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
-            const orderNumber = (order.id || '').toString().replace(/[^\d]/g, '').padStart(3, '0');
-            doc.text(orderNumber, pageWidth / 2, y, { align: 'center' });
-            y += lineHeight * 2.5;
+            doc.text(`Commande #: ${order.id}`, pageWidth / 2, y, { align: 'center' });
+            y += lineHeight * 1.5;
+            
+            // Date and time
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Date: ${order.timestamp || new Date().toLocaleString()}`, pageWidth / 2, y, { align: 'center' });
+            y += lineHeight * 1.5;
             
             // Reset font
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(10);
             
+            // Add some extra space before the table header
+            y += lineHeight;
+            
+            // Table header
+            doc.setFont('helvetica', 'bold');
+            doc.text("Article", margin, y);
+            doc.text("Qté", pageWidth - margin - 70, y, { align: 'center' });
+            doc.text("Prix", pageWidth - margin, y, { align: 'right' });
+            y += lineHeight;
+            
+            // Divider
+            doc.setDrawColor(0, 0, 0);
+            doc.line(margin, y, pageWidth - margin, y);
+            y += lineHeight;
+            
             // Items
-            console.log("Processing items:", order.items);
             let subtotal = 0;
             
             if (order.items && Array.isArray(order.items)) {
                 order.items.forEach((item, index) => {
                     try {
-                        // Quantity at left
+                        // Product name
+                        doc.setFont('helvetica', 'normal');
+                        let name = item.name || `Item ${index+1}`;
+                        
+                        // Quantity
                         const quantity = item.quantity || 1;
-                        doc.setFont('helvetica', 'bold');
-                        doc.text(quantity.toString(), margin, y);
                         
-                        // Product name next to quantity
-                        const name = item.name || `Item ${index+1}`;
-                        doc.text(name, margin + 15, y);
-                        
-                        // Unit price and total for this item at right
+                        // Calculate price after discount
                         const unitPrice = item.unit_price || 0;
                         const itemTotal = unitPrice * quantity;
-                        subtotal += itemTotal;
+                        let finalItemPrice = itemTotal;
                         
-                        // Format with DH suffix
-                        const priceText = `${itemTotal.toFixed(2)} DH`;
-                        doc.text(priceText, pageWidth - margin, y, { align: 'right' });
+                        if (item.discount) {
+                            if (item.discount.type === 'percentage') {
+                                finalItemPrice = itemTotal * (1 - item.discount.value / 100);
+                                
+                                // Format discount display next to name
+                                if (item.discount.value >= 100) {
+                                    name = `${name} (GRATUIT)`;
+                                    finalItemPrice = 0;
+                                } else {
+                                    name = `${name} (-${item.discount.value}%)`;
+                                }
+                            } else if (item.discount.type === 'fixed') {
+                                finalItemPrice = Math.max(0, itemTotal - item.discount.amount);
+                                name = `${name} (-${item.discount.amount.toFixed(2)} DH)`;
+                            }
+                        }
                         
-                        y += lineHeight;
+                        // Add to subtotal
+                        subtotal += finalItemPrice;
                         
-                        // Add unit price line with indentation
-                        doc.setFont('helvetica', 'normal');
-                        doc.setFontSize(8);
-                        doc.text(`${unitPrice.toFixed(2)} DH / Unité(s)`, margin + 15, y);
+                        // Print item details
+                        doc.text(name, margin, y);
+                        doc.text(quantity.toString(), pageWidth - margin - 70, y, { align: 'center' });
+                        
+                        // Display price
+                        if (item.discount) {
+                            if (finalItemPrice === 0) {
+                                doc.setTextColor(255, 0, 0);
+                                doc.text("0.00 DH", pageWidth - margin, y, { align: 'right' });
+                                doc.setTextColor(0, 0, 0);
+                            } else {
+                                doc.text(`${finalItemPrice.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
+                            }
+                        } else {
+                            doc.text(`${itemTotal.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
+                        }
+                        
                         y += lineHeight;
                     } catch (itemError) {
-                        console.error("Error processing item:", item, itemError);
+                        console.error("Error processing item:", itemError);
                     }
                 });
-            } else {
-                console.warn("No items array found in order or items is not an array");
-                // Fallback demo items
-                doc.setFont('helvetica', 'bold');
-                doc.text("6", margin, y);
-                doc.text("Lunch Maki 18pc", margin + 15, y);
-                const maki = 222.12;
-                subtotal += maki;
-                doc.text(`${maki.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
-                y += lineHeight;
-                
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
-                doc.text("37.02 DH / Unité(s)", margin + 15, y);
-                y += lineHeight;
-                
-                doc.setFont('helvetica', 'bold');
-                doc.text("1", margin, y);
-                doc.text("Schweppes", margin + 15, y);
-                const schweppes = 2.64;
-                subtotal += schweppes;
-                doc.text(`${schweppes.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
-                y += lineHeight;
-                
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
-                doc.text("2.64 DH / Unité(s)", margin + 15, y);
-                y += lineHeight;
             }
             
             // Draw a separator line
@@ -261,46 +270,78 @@ const Receipt = () => {
             doc.setFontSize(10);
             
             // Calculate totals
-            const tax = order.tax || subtotal * 0.2 || 37.46;
-            const total = order.total || subtotal + tax || 224.76;
+            const tax = order.tax || 0;
+            let total = order.total || subtotal + tax;
             
             // Format subtotal
-            doc.text("Montant hors taxes", margin, y);
+            doc.text("Sous-total", margin, y);
             doc.text(`${subtotal.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
             y += lineHeight;
             
-            // Add TVA
-            doc.text("TVA 20%", margin, y);
-            doc.text(`${tax.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
-            y += lineHeight * 0.5;
+            // Add TVA if applicable
+            if (tax > 0) {
+                doc.text("TVA", margin, y);
+                doc.text(`${tax.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
+                y += lineHeight;
+            }
+            
+            // Add order-level discount if present
+            if (order.promotion) {
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(255, 0, 0); // Red color for discount
+                
+                const discountName = order.promotion.name || "Remise";
+                const discountAmount = order.promotion.amount || order.promotion.discountAmount || 0;
+                
+                doc.text(discountName, margin, y);
+                doc.text(`-${discountAmount.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
+                
+                // Reset text color
+                doc.setTextColor(0, 0, 0);
+                y += lineHeight;
+            }
             
             // Draw a separator line
-            doc.setDrawColor(200, 200, 200);
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
             doc.line(margin, y, pageWidth - margin, y, 'S');
             y += lineHeight;
             
             // Total
             doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
             doc.text("TOTAL", margin, y);
             doc.text(`${total.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
-            y += lineHeight;
+            y += lineHeight * 1.5;
             
-            // Payment Method - assume cash
+            // Payment Method
             doc.setFont('helvetica', 'normal');
-            doc.text("Espèces", margin, y);
+            doc.setFontSize(10);
+            const paymentMethod = order.payment?.method === 'cash' ? 'Espèces' : 
+                                  order.payment?.method === 'card' ? 'Carte bancaire' : 
+                                  order.payment?.method || 'Espèces';
+            doc.text(paymentMethod, margin, y);
             
-            // Get payment amount (assume it's more than total)
-            const paidAmount = order.payment?.amount || 250.00;
+            // Get payment amount
+            const paidAmount = order.payment?.amount || total;
             doc.text(`${paidAmount.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
             y += lineHeight;
             
-            // Change
-            doc.text("MONNAIE", margin, y);
-            const change = paidAmount - total;
-            doc.text(`${change.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
+            // Change (only if cash payment and amount > total)
+            if (order.payment?.method === 'cash' && paidAmount > total) {
+                doc.text("MONNAIE", margin, y);
+                const change = paidAmount - total;
+                doc.text(`${change.toFixed(2)} DH`, pageWidth - margin, y, { align: 'right' });
+                y += lineHeight * 2;
+            } else {
+                y += lineHeight;
+            }
+            
+            // Thank you message
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(8);
+            doc.text("Merci de votre visite!", pageWidth / 2, y, { align: 'center' });
             y += lineHeight * 2;
-            
-            
             
             // Generate QR code
             const qr = qrcode(4, 'L');
@@ -313,10 +354,7 @@ const Receipt = () => {
             doc.addImage(imgData, 'PNG', (pageWidth - qrSize) / 2, y, qrSize, qrSize);
             y += qrSize + lineHeight;
             
-            
-            
             // Open the PDF in a new tab
-            console.log("Opening PDF in a new tab");
             const pdfOutput = doc.output('datauristring');
             
             // Open in a new tab
@@ -325,7 +363,7 @@ const Receipt = () => {
                 newWindow.document.write(`
                     <html>
                         <head>
-                            <title>Reçu N°${orderNumber}</title>
+                            <title>Reçu N°${order.id}</title>
                         </head>
                         <body style="margin:0;padding:0;">
                             <embed width="100%" height="100%" src="${pdfOutput}" type="application/pdf" />
@@ -334,12 +372,10 @@ const Receipt = () => {
                 `);
             } else {
                 // If popup is blocked, try to download instead
-                console.log("Popup blocked, downloading PDF");
                 doc.save(`receipt-${order.id || 'unknown'}.pdf`);
                 alert("Votre navigateur a bloqué l'ouverture du reçu. Le fichier a été téléchargé à la place.");
             }
             
-            console.log("Receipt generation completed successfully");
             return true;
         } catch (error) {
             console.error('Error generating receipt:', error);
