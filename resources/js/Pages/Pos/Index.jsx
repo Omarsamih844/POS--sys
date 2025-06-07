@@ -1162,18 +1162,29 @@ const PosIndex = ({ auth: propAuth }) => {
     const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
     const [selectedOrderDetails, setSelectedOrderDetails] = useState(null);
     const [tables, setTables] = useState([
-        { id: '1', status: 'available' },
-        { id: '2', status: 'available' },
-        { id: '3', status: 'available' },
-        { id: '4', status: 'available' },
-        { id: '5', status: 'available' },
-        { id: '6', status: 'available' },
-        { id: '7', status: 'available' },
-        { id: '8', status: 'available' },
-        { id: '9', status: 'available' },
-        { id: '10', status: 'available' },
-        { id: '11', status: 'available' },
-        { id: '12', status: 'available' }
+        // Tables principales (1-12)
+        { id: '1', status: 'available', area: 'main' },
+        { id: '2', status: 'available', area: 'main' },
+        { id: '3', status: 'available', area: 'main' },
+        { id: '4', status: 'available', area: 'main' },
+        { id: '5', status: 'available', area: 'main' },
+        { id: '6', status: 'available', area: 'main' },
+        { id: '7', status: 'available', area: 'main' },
+        { id: '8', status: 'available', area: 'main' },
+        { id: '9', status: 'available', area: 'main' },
+        { id: '10', status: 'available', area: 'main' },
+        { id: '11', status: 'available', area: 'main' },
+        { id: '12', status: 'available', area: 'main' },
+        // Tables du patio (20-30)
+        { id: '20', status: 'available', area: 'patio' },
+        { id: '21', status: 'available', area: 'patio' },
+        { id: '22', status: 'available', area: 'patio' },
+        { id: '23', status: 'available', area: 'patio' },
+        { id: '24', status: 'available', area: 'patio' },
+        { id: '25', status: 'available', area: 'patio' },
+        { id: '26', status: 'available', area: 'patio' },
+        { id: '27', status: 'available', area: 'patio' },
+        { id: '28', status: 'available', area: 'patio' }
     ]);
     const [activeFloor, setActiveFloor] = useState('Main Floor');
     const [showDeleteQtyModal, setShowDeleteQtyModal] = useState(false);
@@ -1188,6 +1199,8 @@ const PosIndex = ({ auth: propAuth }) => {
     const [selectedDiscountItem, setSelectedDiscountItem] = useState(null);
     const [showFreeItemModal, setShowFreeItemModal] = useState(false);
     const [selectedFreeItem, setSelectedFreeItem] = useState(null);
+    const [showDiscountConfirmModal, setShowDiscountConfirmModal] = useState(false);
+    const [showFreeItemConfirmModal, setShowFreeItemConfirmModal] = useState(false);
     
     // Add offline mode state
     const [offlineMode, setOfflineMode] = useState(false);
@@ -1464,9 +1477,8 @@ const PosIndex = ({ auth: propAuth }) => {
             return Math.round((sum + itemTotal) * 100) / 100;
         }, 0);
 
-        // Calculate tax with proper rounding
-        const newTax = Math.round(newSubtotal * 0.20 * 100) / 100; // 20% tax
-        let newTotal = Math.round((newSubtotal + newTax) * 100) / 100;
+        // Le total est égal au sous-total (pas de TVA séparée)
+        let newTotal = newSubtotal;
         
         // Add delivery surcharge if delivery is selected
         if (orderType === 'delivery') {
@@ -1486,7 +1498,8 @@ const PosIndex = ({ auth: propAuth }) => {
         }
 
         setSubtotal(Math.round(newSubtotal * 100) / 100);
-        setTax(Math.round(newTax * 100) / 100);
+        // On garde la variable tax pour compatibilité, mais on la met à 0
+        setTax(0);
         setTotal(Math.round(newTotal * 100) / 100);
         
         // Force a re-render through a small state change
@@ -2145,7 +2158,8 @@ const PosIndex = ({ auth: propAuth }) => {
         setShowOrderDetailsModal(true);
     };
 
-    // Update the handleDiscountApply function to make it more robust
+    // Updated handleDiscountApply function to work with both item and order-level discounts
+    // et appliquer les remises immédiatement
     const handleDiscountApply = (discount) => {
         if (discount.target === 'item' && discount.itemId) {
             // Apply to specific item
@@ -2158,7 +2172,10 @@ const PosIndex = ({ auth: propAuth }) => {
             // Create a completely new object to ensure React detects the change
             const newItemDiscounts = {...itemDiscounts};
             newItemDiscounts[discount.itemId] = normalizedDiscount;
+            
+            // Appliquer immédiatement
             setItemDiscounts(newItemDiscounts);
+            calculateTotals();
         } else {
             // Apply to full order
             const normalizedDiscount = {
@@ -2167,37 +2184,43 @@ const PosIndex = ({ auth: propAuth }) => {
                 discountAmount: Math.round(discount.amount * 100) / 100
             };
             
-            // Set the promotion
+            // Set the promotion et appliquer immédiatement
             setActivePromotion({...normalizedDiscount});
+            calculateTotals();
         }
-        
-        // Force immediate recalculation
-        setTimeout(calculateTotals, 50);
     };
 
-    // Add openDiscountModal function
+    // Modified openDiscountModal function to work with both item and order discounts
     const openDiscountModal = (item = null) => {
         if (!activeOrderId) {
             showAlert('Veuillez créer une nouvelle commande d\'abord.', 'Attention');
             return;
         }
-        setSelectedDiscountItem(item);
-        setShowDiscountModal(true);
+        
+        // Si un article est spécifié, on montre la confirmation
+        // Sinon, on ouvre directement la modal de remise pour toute la commande
+        if (item) {
+            setSelectedDiscountItem(item);
+            setShowDiscountConfirmModal(true);
+        } else {
+            setSelectedDiscountItem(null);
+            setShowDiscountModal(true);
+        }
     };
 
-    // Update handleMakeItemFree to ensure changes are always detected
-    const handleMakeItemFree = (target) => {
-        if (target === 'order') {
-            // Apply 100% discount to the entire order
-            const orderDiscount = {
-                type: 'percentage',
-                value: 100,
-                amount: subtotal,
-                target: 'order',
-                name: 'Commande gratuite'
-            };
-            setActivePromotion({...orderDiscount});
-        } else if (target === 'item' && selectedProduct) {
+    // Show confirmation before making item free
+    const showMakeItemFreeConfirmation = () => {
+        if (selectedProduct) {
+            setShowFreeItemConfirmModal(true);
+        } else {
+            showAlert('Veuillez sélectionner un article d\'abord', 'Information');
+        }
+    };
+    
+    // Updated handleMakeItemFree to only work with item-level discounts
+    // et appliquer immédiatement la remise
+    const handleMakeItemFree = () => {
+        if (selectedProduct) {
             // Apply 100% discount to the selected item
             const itemDiscount = {
                 type: 'percentage',
@@ -2211,15 +2234,16 @@ const PosIndex = ({ auth: propAuth }) => {
             // Create a completely new object to ensure React detects the change
             const newItemDiscounts = {...itemDiscounts};
             newItemDiscounts[selectedProduct.id] = itemDiscount;
+            
+            // Appliquer immédiatement
             setItemDiscounts(newItemDiscounts);
+            calculateTotals();
+            
+            // Close the confirmation modal
+            setShowFreeItemConfirmModal(false);
         } else {
             showAlert('Veuillez sélectionner un article d\'abord', 'Information');
         }
-        
-        setShowFreeItemModal(false);
-        
-        // Force immediate recalculation
-        setTimeout(calculateTotals, 50);
     };
 
     // Add an effect to specifically watch for discount changes and recalculate
@@ -2333,6 +2357,50 @@ const PosIndex = ({ auth: propAuth }) => {
                                                     <DocumentTextIcon className="h-4 w-4" />
                                                     <span className="text-xs ml-1">{activeOrders.find(o => o.id === activeOrderId)?.generateTicket ? 'On' : 'Off'}</span>
                                                 </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        if (cart.length > 0) {
+                                                            // Ouvrir la modal de remise pour toute la commande
+                                                            setShowDiscountModal(true);
+                                                        } else {
+                                                            showAlert('Ajoutez des articles au panier d\'abord', 'Information');
+                                                        }
+                                                    }}
+                                                    className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50 flex items-center"
+                                                    title="Remise sur toute la commande"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-xs">Remise</span>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        if (cart.length > 0) {
+                                                            // Appliquer une remise de 100% sur toute la commande
+                                                            const orderDiscount = {
+                                                                type: 'percentage',
+                                                                value: 100,
+                                                                amount: subtotal,
+                                                                target: 'order',
+                                                                name: 'Commande gratuite'
+                                                            };
+                                                            // Appliquer immédiatement
+                                                            setActivePromotion({...orderDiscount});
+                                                            calculateTotals();
+                                                            showAlert('La commande a été rendue gratuite', 'Succès');
+                                                        } else {
+                                                            showAlert('Ajoutez des articles au panier d\'abord', 'Information');
+                                                        }
+                                                    }}
+                                                    className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50 flex items-center"
+                                                    title="Rendre toute la commande gratuite"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
+                                                    </svg>
+                                                    <span className="text-xs">Gratuit</span>
+                                                </button>
                                                 <div className="relative remise-container">
                                                     <button
                                                         onClick={(e) => {
@@ -2344,7 +2412,7 @@ const PosIndex = ({ auth: propAuth }) => {
                                                             dropdown.classList.toggle('hidden');
                                                             e.stopPropagation();
                                                         }}
-                                                        className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50"
+                                                        className="bg-white text-blue-600 px-2 py-1 rounded-md hover:bg-blue-50 hidden"
                                                         title="Remise"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2387,7 +2455,7 @@ const PosIndex = ({ auth: propAuth }) => {
                                                             dropdown.classList.toggle('hidden');
                                                             e.stopPropagation();
                                                         }}
-                                                        className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50"
+                                                        className="bg-white text-green-600 px-2 py-1 rounded-md hover:bg-green-50 hidden"
                                                         title="Gratuit"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2519,7 +2587,7 @@ const PosIndex = ({ auth: propAuth }) => {
                                                 <div className="font-medium text-sm">
                                                     {item.name}
                                                     {itemDiscounts[item.product_id] && (
-                                                        <span className={`ml-2 text-xs font-normal ${
+                                                        <span className={`ml-2 text-xs font-normal flex items-center ${
                                                             itemDiscounts[item.product_id].type === 'percentage' && 
                                                             itemDiscounts[item.product_id].value >= 100 ? 
                                                             'text-red-600 font-semibold' : 'text-green-600'
@@ -2530,6 +2598,23 @@ const PosIndex = ({ auth: propAuth }) => {
                                                              `(-${itemDiscounts[item.product_id].type === 'percentage' 
                                                                 ? itemDiscounts[item.product_id].value + '%' 
                                                                 : itemDiscounts[item.product_id].amount.toFixed(2) + ' MAD'})`}
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    // Supprimer la remise sur cet article
+                                                                    const newItemDiscounts = {...itemDiscounts};
+                                                                    delete newItemDiscounts[item.product_id];
+                                                                    // Appliquer et recalculer immédiatement
+                                                                    setItemDiscounts(newItemDiscounts);
+                                                                    calculateTotals();
+                                                                }}
+                                                                className="ml-1 text-red-500 hover:text-red-700"
+                                                                title="Annuler la remise"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                                </svg>
+                                                            </button>
                                                         </span>
                                                     )}
                                                 </div>
@@ -2623,14 +2708,36 @@ const PosIndex = ({ auth: propAuth }) => {
                                                     title="Appliquer une remise"
                                                 >
                                                     <svg 
-                                                        fill="#00FF00" 
-                                                        width="24px" 
-                                                        height="24px" 
-                                                        viewBox="0 0 24 24" 
                                                         xmlns="http://www.w3.org/2000/svg"
-                                                        className="w-5 h-5 text-gray-600"
+                                                        className="w-5 h-5 text-blue-600"
+                                                        fill="none" 
+                                                        viewBox="0 0 24 24" 
+                                                        stroke="currentColor"
                                                     >
-                                                        <path d="M12,1A11,11,0,1,0,23,12,11.013,11.013,0,0,0,12,1Zm0,20a9,9,0,1,1,9-9A9.01,9.01,0,0,1,12,21ZM16.707,8.707l-8,8a1,1,0,1,1-1.414-1.414l8-8a1,1,0,1,1,1.414,1.414ZM6.5,8.5a2,2,0,1,1,2,2A2,2,0,0,1,6.5,8.5Zm11,7a2,2,0,1,1-2-2A2,2,0,0,1,17.5,15.5Z"/>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // Set the selected product first
+                                                        const product = menuData.flatMap(cat => cat.products).find(p => p.id === item.product_id);
+                                                        if (product) {
+                                                            setSelectedProduct(product);
+                                                            setTimeout(() => showMakeItemFreeConfirmation(), 50);
+                                                        }
+                                                    }}
+                                                    className="p-1 rounded hover:bg-gray-100"
+                                                    title="Rendre gratuit"
+                                                >
+                                                    <svg 
+                                                        xmlns="http://www.w3.org/2000/svg" 
+                                                        className="w-5 h-5 text-green-600" 
+                                                        fill="none" 
+                                                        viewBox="0 0 24 24" 
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m-8-6h16" />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -2646,10 +2753,6 @@ const PosIndex = ({ auth: propAuth }) => {
                                     <span>Sous-total</span>
                                     <span>{subtotal.toFixed(2)} MAD</span>
                                 </div>
-                                <div className="flex justify-between text-xs text-gray-600">
-                                    <span>TVA (20%)</span>
-                                    <span>{tax.toFixed(2)} MAD</span>
-                                </div>
                                 {deliverySurcharge > 0 && (
                                     <div className="flex justify-between text-xs text-gray-600">
                                         <span>Frais livraison</span>
@@ -2658,7 +2761,23 @@ const PosIndex = ({ auth: propAuth }) => {
                                 )}
                                 {activePromotion && (
                                     <div className="flex justify-between text-xs text-green-600">
-                                        <span className="truncate">{activePromotion.name}</span>
+                                        <span className="truncate flex items-center">
+                                            {activePromotion.name}
+                                            <button 
+                                                onClick={() => {
+                                                                                                                        // Annuler la remise sur toute la commande
+                                                                    setActivePromotion(null);
+                                                                    // Recalculer immédiatement
+                                                                    calculateTotals();
+                                                }}
+                                                className="ml-1 text-red-500 hover:text-red-700"
+                                                title="Annuler la remise"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </span>
                                         <span>-{(activePromotion.amount || activePromotion.discountAmount || 0).toFixed(2)}</span>
                                     </div>
                                 )}
@@ -2916,38 +3035,38 @@ const PosIndex = ({ auth: propAuth }) => {
                                             {activeFloor === 'Main Floor' && (
                                                 <div className="bg-amber-100 p-6 rounded-md min-h-[600px] relative">
                                                     {/* Tables Area - kitchen removed, full width */}
-                                                    <div className="w-full grid grid-cols-3 gap-8 p-6 justify-items-center">
-                                                        {tables.filter(table => parseInt(table.id) < 20).map(table => (
+                                                    <div className="w-full grid grid-cols-4 gap-6 p-6 justify-items-center">
+                                                        {tables.filter(table => table.area === 'main').map(table => (
                                                             <div 
                                                                 key={table.id}
                                                                 onClick={() => handleTableSelect(table.id)}
-                                                                className={`relative w-full h-48 max-w-xs rounded-xl shadow-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105
+                                                                className={`relative w-32 h-32 rounded-md shadow-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105
                                                                     ${table.status === 'occupied' ? 'bg-red-100 border-red-400' : 'bg-green-100 border-green-400'}
                                                                 `}
                                                             >
                                                                 {/* Status Badge */}
                                                                 <div className={`absolute top-2 right-2 w-4 h-4 rounded-full ${table.status === 'occupied' ? 'bg-red-500' : 'bg-green-500'}`}></div>
                                                                 {/* Table Number */}
-                                                                <span className="text-3xl font-bold text-gray-800">{table.id}</span>
+                                                                <span className="text-2xl font-bold text-gray-800">{table.id}</span>
                                                                 {/* Occupancy */}
                                                                 {table.status === 'occupied' && (
-                                                                    <div className="mt-2 px-2 py-1 bg-white rounded-full text-xs font-semibold shadow">
-                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    <div className="mt-1 px-2 py-0.5 bg-white rounded-full text-xs font-semibold shadow">
+                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'pers.' : 'pers.'}
                                                                     </div>
                                                                 )}
                                                                 
                                                                 {/* Timer display */}
                                                                 {table.status === 'occupied' && tableTimers[table.id] && (
-                                                                    <div className="mt-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold shadow flex items-center">
+                                                                    <div className="mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold shadow flex items-center">
                                                                         <span className="mr-1">⏱️</span> {tableTimers[table.id]}
                                                                     </div>
                                                                 )}
                                                                 
-                                                                {/* Round Table Chairs */}
-                                                                <div className="absolute -top-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
-                                                                <div className="absolute top-12 -right-6 w-8 h-8 bg-blue-300 rounded-full"></div>
-                                                                <div className="absolute -bottom-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
-                                                                <div className="absolute top-12 -left-6 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                {/* Square Table with 4 Chairs */}
+                                                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-1/2 -right-3 transform -translate-y-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-1/2 -left-3 transform -translate-y-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -2957,38 +3076,39 @@ const PosIndex = ({ auth: propAuth }) => {
                                             {/* Patio Area */}
                                             {activeFloor === 'Patio' && (
                                                 <div className="bg-emerald-100 p-6 rounded-md min-h-[600px] relative">
-                                                    <div className="grid grid-cols-3 gap-8 p-6">
-                                                        {tables.filter(table => parseInt(table.id) >= 20).map(table => (
+                                                    <div className="grid grid-cols-4 gap-6 p-6 justify-items-center">
+                                                        {tables.filter(table => table.area === 'patio').map(table => (
                                                             <div 
                                                                 key={table.id}
                                                                 onClick={() => handleTableSelect(table.id)}
-                                                                className={`relative ${
-                                                                    table.status === 'occupied' 
-                                                                        ? 'bg-red-400 border-red-600' 
-                                                                        : 'bg-green-400 border-green-600'
-                                                                } w-32 h-32 rounded-full flex flex-col items-center justify-center cursor-pointer shadow-md border-2 transition-transform transform hover:scale-105`}
+                                                                className={`relative w-32 h-32 rounded-md shadow-lg border-2 flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-105
+                                                                    ${table.status === 'occupied' ? 'bg-red-100 border-red-400' : 'bg-green-100 border-green-400'}
+                                                                `}
                                                             >
-                                                                <span className="text-2xl font-bold">{table.id}</span>
+                                                                {/* Status Badge */}
+                                                                <div className={`absolute top-2 right-2 w-4 h-4 rounded-full ${table.status === 'occupied' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                                                                {/* Table Number */}
+                                                                <span className="text-2xl font-bold text-gray-800">{table.id}</span>
                                                                 
                                                                 {/* Show number of people if table is occupied */}
                                                                 {table.status === 'occupied' && (
-                                                                    <div className="mt-1 px-2 py-1 bg-white rounded-full text-xs font-medium">
-                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'person' : 'people'}
+                                                                    <div className="mt-1 px-2 py-0.5 bg-white rounded-full text-xs font-semibold shadow">
+                                                                        {tableOccupancies[table.id] || 1} {tableOccupancies[table.id] === 1 ? 'pers.' : 'pers.'}
                                                                     </div>
                                                                 )}
                                                                 
                                                                 {/* Timer display */}
                                                                 {table.status === 'occupied' && tableTimers[table.id] && (
-                                                                    <div className="mt-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium flex items-center">
+                                                                    <div className="mt-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold shadow flex items-center">
                                                                         <span className="mr-1">⏱️</span> {tableTimers[table.id]}
                                                                     </div>
                                                                 )}
                                                                 
-                                                                {/* Round Table Chairs */}
-                                                                <div className="absolute -top-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
-                                                                <div className="absolute top-12 -right-6 w-8 h-8 bg-blue-300 rounded-full"></div>
-                                                                <div className="absolute -bottom-6 left-12 w-8 h-8 bg-blue-300 rounded-full"></div>
-                                                                <div className="absolute top-12 -left-6 w-8 h-8 bg-blue-300 rounded-full"></div>
+                                                                {/* Square Table with 4 Chairs */}
+                                                                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-1/2 -right-3 transform -translate-y-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
+                                                                <div className="absolute top-1/2 -left-3 transform -translate-y-1/2 w-6 h-6 bg-blue-300 rounded-full"></div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -3539,35 +3659,49 @@ const PosIndex = ({ auth: propAuth }) => {
                 selectedItem={selectedDiscountItem}
                 subtotal={subtotal}
             />
-            {/* Free Item Modal */}
-            <Modal show={showFreeItemModal} onClose={() => setShowFreeItemModal(false)}>
+            {/* Discount Confirmation Modal */}
+            <Modal show={showDiscountConfirmModal} onClose={() => setShowDiscountConfirmModal(false)}>
                 <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 mb-4">Article Gratuit</h2>
-                    <p className="mb-4">Que souhaitez-vous rendre gratuit?</p>
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Appliquer une remise</h2>
+                    <p className="mb-4">Voulez-vous appliquer une remise à l'article: <span className="font-semibold">{selectedDiscountItem?.name}</span>?</p>
                     
-                    <div className="flex flex-col space-y-3 mb-4">
+                    <div className="flex justify-end space-x-3">
                         <button
-                            onClick={() => handleMakeItemFree('order')}
-                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                        >
-                            Commande entière
-                        </button>
-                        <button
-                            onClick={() => handleMakeItemFree('item')}
-                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-                            disabled={!selectedProduct}
-                        >
-                            Article sélectionné
-                            {selectedProduct && <span className="ml-1">({selectedProduct.name})</span>}
-                        </button>
-                    </div>
-                    
-                    <div className="flex justify-end">
-                        <button
-                            onClick={() => setShowFreeItemModal(false)}
-                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+                            onClick={() => setShowDiscountConfirmModal(false)}
+                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
                         >
                             Annuler
+                        </button>
+                        <button
+                            onClick={() => {
+                                setShowDiscountConfirmModal(false);
+                                setShowDiscountModal(true);
+                            }}
+                            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        >
+                            Confirmer
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            {/* Free Item Confirmation Modal */}
+            <Modal show={showFreeItemConfirmModal} onClose={() => setShowFreeItemConfirmModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 mb-4">Rendre l'article gratuit</h2>
+                    <p className="mb-4">Voulez-vous rendre l'article <span className="font-semibold">{selectedProduct?.name}</span> gratuit?</p>
+                    
+                    <div className="flex justify-end space-x-3">
+                        <button
+                            onClick={() => setShowFreeItemConfirmModal(false)}
+                            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleMakeItemFree}
+                            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        >
+                            Confirmer
                         </button>
                     </div>
                 </div>
