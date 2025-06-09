@@ -14,9 +14,25 @@ class UserSeeder extends Seeder
     {
         User::insert([
             [
-                'first_name' => 'MOHAMMED',
-                'last_name' => 'DAHMANI',
-                'email' => 'simo@email.com',
+                'first_name' => 'OMAR',
+                'last_name' => 'SAMIH',
+                'email' => 'omar.samih@email.com',
+                'email_verified_at' => Carbon::now()->format('y:m:d H:i:s'),
+                'password' => Hash::make('azerty123456'),
+                'id_role' => 2
+            ],
+            [
+                'first_name' => 'OTHMANE',
+                'last_name' => 'KIADE',
+                'email' => 'othmane.kiade@email.com',
+                'email_verified_at' => Carbon::now()->format('y:m:d H:i:s'),
+                'password' => Hash::make('azerty123456'),
+                'id_role' => 2
+            ],
+            [
+                'first_name' => 'WAHBI',
+                'last_name' => 'ALI',
+                'email' => 'wahbi.ali@email.com',
                 'email_verified_at' => Carbon::now()->format('y:m:d H:i:s'),
                 'password' => Hash::make('azerty123456'),
                 'id_role' => 2
