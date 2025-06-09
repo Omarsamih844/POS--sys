@@ -1144,7 +1144,74 @@ const PosIndex = ({ auth: propAuth }) => {
     const [activePromotion, setActivePromotion] = useState(null);
     const [customizations, setCustomizations] = useState({});
     const [startNewInput, setStartNewInput] = useState(true);
-    const [activeOrders, setActiveOrders] = useState([]);
+    const [activeOrders, setActiveOrders] = useState([
+        // 3 commandes initiales sur place
+        {
+            id: `CMD-${Date.now()}-001`,
+            items: [
+                { product_id: 1, name: 'Pizza Margherita', price: 65.00, quantity: 2 },
+                { product_id: 2, name: 'Coca Cola', price: 10.00, quantity: 2 }
+            ],
+            type: 'eat_in',
+            table_number: '1',
+            notes: 'Client régulier',
+            status: 'pending',
+            timestamp: new Date().toLocaleString('fr-FR'),
+            subtotal: 150.00,
+            tax: 0,
+            total: 150.00,
+            numberOfPeople: 2
+        },
+        {
+            id: `CMD-${Date.now()}-002`,
+            items: [
+                { product_id: 3, name: 'Salade César', price: 45.00, quantity: 1 },
+                { product_id: 4, name: 'Steak Frites', price: 120.00, quantity: 1 },
+                { product_id: 5, name: 'Eau Minérale', price: 8.00, quantity: 2 }
+            ],
+            type: 'eat_in',
+            table_number: '2',
+            notes: 'Anniversaire',
+            status: 'pending',
+            timestamp: new Date().toLocaleString('fr-FR'),
+            subtotal: 181.00,
+            tax: 0,
+            total: 181.00,
+            numberOfPeople: 4
+        },
+        {
+            id: `CMD-${Date.now()}-003`,
+            items: [
+                { product_id: 6, name: 'Crème Brûlée', price: 35.00, quantity: 1 },
+                { product_id: 7, name: 'Café', price: 12.00, quantity: 1 }
+            ],
+            type: 'eat_in',
+            table_number: '3',
+            notes: '',
+            status: 'pending',
+            timestamp: new Date().toLocaleString('fr-FR'),
+            subtotal: 47.00,
+            tax: 0,
+            total: 47.00,
+            numberOfPeople: 1
+        },
+        {
+            id: `CMD-${Date.now()}-004`,
+            items: [
+                { product_id: 8, name: 'Tajine Poulet', price: 85.00, quantity: 2 },
+                { product_id: 9, name: 'Jus d\'Orange', price: 15.00, quantity: 3 }
+            ],
+            type: 'eat_in',
+            table_number: '4',
+            notes: 'Table famille',
+            status: 'pending',
+            timestamp: new Date().toLocaleString('fr-FR'),
+            subtotal: 215.00,
+            tax: 0,
+            total: 215.00,
+            numberOfPeople: 5
+        }
+    ]);
     const [activeOrderId, setActiveOrderId] = useState(null);
     const [showOrderHistory, setShowOrderHistory] = useState(false);
     const [activeHistoryTab, setActiveHistoryTab] = useState('all'); // 'all', 'pending', 'paid', 'cancelled'
@@ -1155,8 +1222,19 @@ const PosIndex = ({ auth: propAuth }) => {
     const [isConfirm, setIsConfirm] = useState(false);
     const [showTableOccupancyModal, setShowTableOccupancyModal] = useState(false);
     const [selectedTableId, setSelectedTableId] = useState(null);
-    const [tableOccupancies, setTableOccupancies] = useState({});
-    const [tableStartTimes, setTableStartTimes] = useState({});
+    const [tableOccupancies, setTableOccupancies] = useState({
+        '1': 2, // Table 1: 2 personnes
+        '2': 4, // Table 2: 4 personnes
+        '3': 1, // Table 3: 1 personne
+        '4': 5, // Table 4: 5 personnes
+    });
+    const [tableStartTimes, setTableStartTimes] = useState({
+        // Temps d'occupation pour les 4 tables (en millisecondes)
+        '1': new Date().getTime() - 30 * 60 * 1000, // Table 1: occupée depuis 30 minutes
+        '2': new Date().getTime() - 45 * 60 * 1000, // Table 2: occupée depuis 45 minutes
+        '3': new Date().getTime() - 15 * 60 * 1000, // Table 3: occupée depuis 15 minutes
+        '4': new Date().getTime() - 60 * 60 * 1000, // Table 4: occupée depuis 1 heure
+    });
     const [tableTimers, setTableTimers] = useState({});
     const [isSelectedTableOccupied, setIsSelectedTableOccupied] = useState(false);
     const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
